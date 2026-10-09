@@ -1,0 +1,850 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Octant Douro Guest App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=DM+Sans:wght@400;500;600;700&display=swap"><style>
+/* ============================================================
+   TOKENS — page stage (theme-aware)
+   ============================================================ */
+:root{
+  --stage:#EEE9E1;
+  --stage-2:#FAF6F0;
+  --stage-3:#E5DFD5;
+  --ink:#232828;
+  --ink-2:#4E5050;
+  --muted:#6D716F;
+  --line:#D5CEC2;
+  --line-soft:#DDD6CA;
+  --accent:#B8603E;
+  --accent-soft:#EFD9B4;
+  --pine:#2A302F;
+  --on-pine:#FAF6F0;
+  --shadow:0 30px 70px -30px rgba(22,33,28,.45), 0 4px 14px -6px rgba(22,33,28,.2);
+
+  --display:"Newsreader",Georgia,"Times New Roman",serif;
+  --ui:"DM Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --mono:"DM Sans",-apple-system,sans-serif;
+
+  /* app palette — fixed: a device screen keeps its own identity */
+  --app-bg:#FAF6F0;
+  --app-surface:#FFFFFF;
+  --app-ink:#232828;
+  --app-ink-2:#4A4F4D;
+  --app-muted:#6D716F;
+  --app-line:#E8E1D6;
+  --app-pine:#2A302F;
+  --app-pine-2:#6B8574;
+  --app-marigold:#F5A280;
+  --app-marigold-ink:#8A4A30;
+  --app-clay:#C8715A;
+  --app-clay-soft:#FBEBE4;
+  --app-mint:#E9F1E6;
+  --app-sand:#F6EBE2;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --stage:#141817;
+    --stage-2:#1B201F;
+    --stage-3:#232927;
+    --ink:#EEEAE2;
+    --ink-2:#C9CDCB;
+    --muted:#9AA09D;
+    --line:#333A38;
+    --line-soft:#2B312F;
+    --accent:#F5A280;
+    --accent-soft:#3A2E17;
+    --pine:#C3CFB7;
+    --on-pine:#141817;
+    --shadow:0 40px 90px -40px rgba(0,0,0,.8), 0 4px 18px -8px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --stage:#141817;
+  --stage-2:#1B201F;
+  --stage-3:#232927;
+  --ink:#EEEAE2;
+  --ink-2:#C9CDCB;
+  --muted:#9AA09D;
+  --line:#333A38;
+  --line-soft:#2B312F;
+  --accent:#F5A280;
+  --accent-soft:#3A2E17;
+  --pine:#C3CFB7;
+  --on-pine:#141817;
+  --shadow:0 40px 90px -40px rgba(0,0,0,.8), 0 4px 18px -8px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--stage);
+  color:var(--ink);
+  font-family:var(--ui);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+p{margin:0}
+ul{margin:0;padding:0;list-style:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+.eyebrow{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);
+}
+
+/* ============================================================
+   PAGE CHROME
+   ============================================================ */
+.topbar{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:18px 28px;border-bottom:1px solid var(--line);
+  background:var(--stage-2);
+}
+.mark{
+  width:38px;height:38px;border-radius:11px;flex:none;
+  background:var(--pine);color:var(--on-pine);
+  display:grid;place-items:center;
+  font-family:var(--display);font-weight:700;font-size:16px;letter-spacing:.02em;
+}
+.topbar-title{display:flex;flex-direction:column;gap:1px;margin-right:auto}
+.topbar-title strong{font-family:var(--display);font-weight:600;font-size:19px;letter-spacing:-.01em}
+.topbar-title span{font-size:12.5px;color:var(--muted)}
+.tag{
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 9px;border-radius:6px;border:1px solid var(--line);color:var(--muted);
+}
+.tag.hot{border-color:var(--accent);color:var(--accent)}
+.tag.toggle{cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.tag.toggle:hover{border-color:var(--ink-2);color:var(--ink)}
+.tag.toggle[aria-pressed="true"]{background:var(--pine);border-color:var(--pine);color:var(--on-pine)}
+
+/* ============================================================
+   THREE-COLUMN STAGE
+   ============================================================ */
+.layout{
+  display:grid;
+  grid-template-columns:238px minmax(0,1fr);
+  gap:0;
+  align-items:start;
+  min-height:calc(100vh - 76px);
+}
+/* Demo view is the default: Italian prototype only, no English on screen.
+   The "Note" button (or N) reveals the presenter notes. */
+body[data-notes="on"] .notes{display:block}
+@media (min-width:1181px){
+  body[data-notes="on"] .layout{grid-template-columns:238px minmax(0,1fr) 340px}
+}
+.rail{
+  border-right:1px solid var(--line);
+  padding:22px 16px 40px;
+  position:sticky;top:0;
+  max-height:100vh;overflow-y:auto;
+}
+.rail-group{margin-bottom:18px}
+.rail-group > .eyebrow{padding:0 10px 7px}
+.rail-item{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:8px 10px;border-radius:9px;color:var(--ink-2);
+  font-size:13.5px;font-weight:500;transition:background .15s,color .15s;
+}
+.rail-item:hover{background:var(--stage-3);color:var(--ink)}
+.rail-item .num{
+  font-family:var(--mono);font-size:10.5px;color:var(--muted);
+  width:18px;flex:none;
+}
+.rail-item[aria-current="true"]{background:var(--pine);color:var(--on-pine);font-weight:600}
+.rail-item[aria-current="true"] .num{color:inherit;opacity:.65}
+
+.stage{
+  padding:30px 20px 48px;
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+  background:
+    radial-gradient(680px 420px at 50% 18%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 70%),
+    var(--stage);
+}
+.stage-hint{
+  display:flex;align-items:center;gap:9px;color:var(--muted);font-size:12.5px;
+}
+.stage-hint .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none}
+
+.notes{
+  display:none;
+  border-left:1px solid var(--line);
+  padding:26px 24px 48px;
+  position:sticky;top:0;
+  max-height:100vh;overflow-y:auto;
+  background:var(--stage-2);
+}
+
+/* ============================================================
+   PHONE FRAME
+   ============================================================ */
+.phone-wrap{
+  --s:1;
+  width:calc(414px * var(--s));
+  height:calc(836px * var(--s));
+}
+.phone{
+  width:414px;height:836px;
+  transform:scale(var(--s));transform-origin:top center;
+  border-radius:50px;
+  background:linear-gradient(160deg,#30363A,#16191B 55%,#2A2F31);
+  padding:12px;
+  box-shadow:var(--shadow), 0 0 0 1.5px rgba(255,255,255,.07) inset;
+  position:relative;
+}
+.phone::after{
+  content:"";position:absolute;left:50%;transform:translateX(-50%);
+  top:24px;width:104px;height:26px;border-radius:14px;background:#0C0E0F;z-index:6;
+}
+.screen{
+  width:100%;height:100%;border-radius:39px;overflow:hidden;
+  background:var(--app-bg);color:var(--app-ink);
+  display:flex;flex-direction:column;position:relative;
+}
+
+/* status bar */
+.statusbar{
+  height:48px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;
+  padding:0 26px 4px;font-size:12.5px;font-weight:700;letter-spacing:.01em;
+  position:relative;z-index:5;
+}
+.statusbar.on-dark{color:#fff}
+.sb-right{display:flex;align-items:center;gap:5px}
+.sb-bar{width:3px;border-radius:1px;background:currentColor}
+.sb-batt{width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.sb-batt::before{content:"";position:absolute;inset:2px;right:6px;background:currentColor;border-radius:1px}
+
+/* scrolling body */
+.app-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+.app-scroll::-webkit-scrollbar{display:none}
+.pad{padding:0 20px}
+.stack{display:flex;flex-direction:column}
+
+/* app views */
+.view{display:none;height:100%;flex-direction:column}
+.view.active{display:flex}
+
+/* ============================================================
+   APP COMPONENTS
+   ============================================================ */
+.a-h1{font-family:var(--display);font-size:27px;font-weight:600;letter-spacing:-.02em;line-height:1.15}
+.a-h2{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.015em}
+.a-h3{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.a-label{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--app-muted);
+}
+.a-meta{font-size:12px;color:var(--app-muted);font-weight:500}
+
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px}
+.sec-head .link{font-size:12px;font-weight:600;color:var(--app-pine-2)}
+
+.appbar{
+  flex:none;display:flex;align-items:center;gap:12px;padding:2px 20px 14px;
+}
+.appbar .a-h2{margin-right:auto}
+.icon-btn{
+  width:36px;height:36px;border-radius:11px;flex:none;
+  display:grid;place-items:center;background:var(--app-surface);
+  border:1px solid var(--app-line);color:var(--app-ink-2);
+}
+.icon-btn.ghost{background:transparent;border-color:transparent}
+.icon-btn.on-dark{background:rgba(255,255,255,.16);border-color:transparent;color:#fff}
+
+.card{
+  background:var(--app-surface);border:1px solid var(--app-line);
+  border-radius:18px;padding:14px;
+}
+
+/* thumbnails built from gradients + line art, no external assets */
+.thumb{
+  position:relative;overflow:hidden;border-radius:14px;flex:none;
+  background:linear-gradient(145deg,var(--t1,#3C6455),var(--t2,#1E3A30));
+}
+.thumb > svg:not(.ico){position:absolute;inset:0;width:100%;height:100%}
+.thumb > svg.ico{position:relative}
+.thumb .dur{
+  position:absolute;right:6px;bottom:6px;z-index:2;
+  font-family:var(--mono);font-size:9.5px;color:#fff;
+  background:rgba(11,16,14,.62);padding:2px 5px;border-radius:5px;
+}
+.t-river{--t1:#7FA7B5;--t2:#2D5566}
+.t-terra{--t1:#B07A55;--t2:#4F3223}
+.t-raiva{--t1:#4A5A57;--t2:#161C1B}
+.t-spa{--t1:#B7C4B0;--t2:#586B5C}
+.t-star{--t1:#3C4466;--t2:#12152B}
+.t-wine{--t1:#9C5B6B;--t2:#46202B}
+.t-sunset{--t1:#F5A280;--t2:#8C3F46}
+.t-canyon{--t1:#6FA39A;--t2:#1F5249}
+.t-hills{--t1:#9FB28F;--t2:#47573F}
+.t-gift{--t1:#D9B79A;--t2:#7A5238}
+.t-pool{--t1:#7FB6B8;--t2:#2C6568}
+.t-pilates{--t1:#3E6858;--t2:#1D362C}
+.t-yoga{--t1:#5C7F8C;--t2:#2A414B}
+.t-flow{--t1:#B07B2E;--t2:#5E3D11}
+.t-mobility{--t1:#6E7F5A;--t2:#33402A}
+.t-zumba{--t1:#C0705E;--t2:#6B3226}
+.t-prenatal{--t1:#C99A9A;--t2:#7A4E52}
+
+/* horizontal rails */
+.hrail{display:flex;gap:12px;overflow-x:auto;padding:2px 20px 4px;scrollbar-width:none}
+.hrail::-webkit-scrollbar{display:none}
+
+/* class list row */
+.row{
+  display:flex;gap:12px;align-items:center;width:100%;text-align:left;
+  background:var(--app-surface);border:1px solid var(--app-line);
+  border-radius:16px;padding:9px;transition:border-color .15s,transform .1s;
+}
+.row:hover{border-color:var(--app-pine-2)}
+.row:active{transform:scale(.99)}
+.row .thumb{width:70px;height:62px}
+.row-body{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
+.row-body .t{font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.25}
+
+/* pills / chips */
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;
+  background:var(--app-mint);color:var(--app-pine);
+}
+.pill.sand{background:var(--app-sand);color:var(--app-marigold-ink)}
+.pill.clay{background:var(--app-clay-soft);color:#8E4437}
+.pill.live{background:#FBE9E6;color:#A83B2A}
+
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 20px 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{
+  flex:none;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;
+  border:1px solid var(--app-line);background:var(--app-surface);color:var(--app-ink-2);
+}
+.chip[aria-pressed="true"]{background:var(--app-pine);border-color:var(--app-pine);color:#fff}
+
+.seg{
+  display:flex;gap:3px;background:var(--app-line);padding:3px;border-radius:12px;
+}
+.seg button{
+  flex:1;font-size:12.5px;font-weight:600;padding:7px 4px;border-radius:9px;color:var(--app-ink-2);
+}
+.seg button[aria-pressed="true"]{background:var(--app-surface);color:var(--app-ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-size:14px;font-weight:700;padding:13px 18px;border-radius:14px;
+  background:var(--app-pine);color:#fff;width:100%;transition:filter .15s;
+}
+.btn:hover{filter:brightness(1.1)}
+.btn.amber{background:var(--app-marigold);color:#2A1B04}
+.btn.outline{background:transparent;border:1.5px solid var(--app-line);color:var(--app-ink)}
+.btn.sm{font-size:12.5px;padding:8px 14px;width:auto;border-radius:11px}
+
+/* progress */
+.bar{display:block;height:6px;border-radius:99px;background:var(--app-line);overflow:hidden}
+.bar > i{display:block;height:100%;border-radius:99px;background:var(--app-pine-2)}
+.bar.amber > i{background:var(--app-marigold)}
+.bar.clay > i{background:var(--app-clay)}
+
+/* tab bar */
+.tabbar{
+  flex:none;display:flex;padding:9px 8px 22px;
+  background:color-mix(in srgb, var(--app-surface) 88%, transparent);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--app-line);
+}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:9.5px;font-weight:600;color:var(--app-muted);padding:4px 0;
+}
+.tab[aria-current="true"]{color:var(--app-pine)}
+.tab svg{width:21px;height:21px}
+
+/* hero blocks */
+.hero-pine{
+  background:linear-gradient(155deg,#34403E,#1E2524);color:#fff;position:relative;overflow:hidden;
+}
+.hero-pine .deco{position:absolute;inset:0;opacity:.55}
+
+/* stat grid */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.stat{background:var(--app-surface);border:1px solid var(--app-line);border-radius:15px;padding:11px 12px}
+.stat b{display:block;font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+
+/* schedule */
+.slot{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--app-line)}
+.slot:last-child{border-bottom:0}
+.slot .time{font-family:var(--mono);font-size:12px;font-weight:500;width:44px;flex:none;padding-top:2px}
+.week{display:flex;gap:6px}
+.day{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:8px 0;border-radius:12px;border:1px solid transparent;font-size:11px;color:var(--app-muted);
+}
+.day b{font-size:14px;color:var(--app-ink);font-variant-numeric:tabular-nums}
+.day[aria-pressed="true"]{background:var(--app-pine);border-color:var(--app-pine);color:rgba(255,255,255,.75)}
+.day[aria-pressed="true"] b{color:#fff}
+
+/* day rows in a program */
+.dayrow{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--app-line);width:100%;text-align:left}
+.dayrow:last-child{border-bottom:0}
+.tick{
+  width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;
+  border:1.5px solid var(--app-line);color:var(--app-muted);
+}
+.tick.done{background:var(--app-pine);border-color:var(--app-pine);color:#fff}
+.tick.today{border-color:var(--app-marigold);color:var(--app-marigold-ink);border-width:2px}
+
+/* quote from Roberta */
+.quote{
+  background:var(--app-sand);border-radius:16px;padding:13px 14px;
+  font-family:var(--display);font-size:14px;line-height:1.45;color:#5A3A2A;
+}
+.quote .who{display:block;margin-top:7px;font-family:var(--ui);font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--app-marigold-ink)}
+
+/* settings list */
+.list-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 0;border-bottom:1px solid var(--app-line);font-size:14px;font-weight:600}
+.list-item:last-child{border-bottom:0}
+.list-item .v{margin-left:auto;font-size:12.5px;font-weight:500;color:var(--app-muted)}
+
+/* plan cards */
+.plan{
+  width:100%;text-align:left;border:1.5px solid var(--app-line);background:var(--app-surface);
+  border-radius:18px;padding:14px;display:flex;gap:12px;align-items:flex-start;
+}
+.plan[aria-pressed="true"]{border-color:var(--app-pine);background:var(--app-mint)}
+.radio{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--app-line);flex:none;margin-top:2px;display:grid;place-items:center}
+.plan[aria-pressed="true"] .radio{border-color:var(--app-pine);background:var(--app-pine);color:#fff}
+
+/* toggle */
+.switch{width:42px;height:25px;border-radius:99px;background:var(--app-pine);position:relative;flex:none;margin-left:auto}
+.switch::after{content:"";position:absolute;top:2.5px;left:20px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .18s}
+.switch[aria-pressed="false"]{background:var(--app-line)}
+.switch[aria-pressed="false"]::after{left:2.5px}
+
+/* success burst */
+.burst{
+  width:76px;height:76px;border-radius:50%;display:grid;place-items:center;
+  background:var(--app-pine);color:#fff;margin:0 auto;
+  box-shadow:0 0 0 12px var(--app-mint);
+}
+
+/* ============================================================
+   NOTES PANEL
+   ============================================================ */
+.notes h2{font-family:var(--display);font-size:22px;font-weight:600;letter-spacing:-.02em;margin:6px 0 10px}
+.notes .n-list{display:flex;flex-direction:column;gap:9px;margin-top:6px}
+.notes .n-list li{display:flex;gap:9px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.notes .n-list li::before{
+  content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);
+  flex:none;margin-top:8px;
+}
+.n-why{
+  margin-top:20px;padding:14px;border-radius:13px;
+  background:var(--stage);border:1px solid var(--line-soft);
+}
+.n-why p{font-size:13.5px;color:var(--ink-2);margin-top:6px;line-height:1.5}
+.n-nav{display:flex;gap:8px;margin-top:22px}
+.n-nav button{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:10px;border-radius:11px;border:1px solid var(--line);
+  font-size:13px;font-weight:600;color:var(--ink-2);background:var(--stage-2);
+}
+.n-nav button:hover:not(:disabled){background:var(--stage-3);color:var(--ink)}
+.n-nav button:disabled{opacity:.4;cursor:not-allowed}
+.n-foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--muted);line-height:1.6}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:1180px){
+  .layout{grid-template-columns:1fr;min-height:0}
+  .rail{
+    position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);
+    display:flex;gap:8px;overflow-x:auto;padding:12px 16px;
+  }
+  .rail-group{display:flex;align-items:center;gap:8px;margin:0}
+  .rail-group > .eyebrow{padding:0 4px 0 6px;white-space:nowrap}
+  .rail-item{width:auto;white-space:nowrap;border:1px solid var(--line);padding:7px 12px}
+  .rail-item .num{display:none}
+  .notes{position:static;max-height:none;border-left:0;border-top:1px solid var(--line)}
+}
+@media (max-width:520px){
+  .phone-wrap{--s:.78}
+  .stage{padding:20px 10px 34px}
+  .topbar{padding:14px 16px}
+}
+
+.a-h1{font-size:33px;font-weight:500;letter-spacing:-.015em;line-height:1.08}.a-h2{font-size:23px;font-weight:500;letter-spacing:-.01em}.stat b{font-size:23px;font-weight:500}
+.a-label,.eyebrow{font-weight:600;font-size:9.5px}
+.quote{font-size:15.5px}.mark{font-size:20px;font-weight:600;border-radius:9px}.topbar-title strong{font-size:22px;font-weight:500}
+.btn{font-weight:600}.btn.amber{color:#2A1B14}
+.pill.sand{color:#8A4A30}
+.bubble{max-width:82%;padding:10px 13px;border-radius:16px;font-size:13.5px;line-height:1.45}
+.bubble.in{background:var(--app-surface);border:1px solid var(--app-line);border-bottom-left-radius:5px;align-self:flex-start}
+.bubble.out{background:var(--app-pine);color:#fff;border-bottom-right-radius:5px;align-self:flex-end}
+.bubble small{display:block;font-size:10.5px;opacity:.6;margin-top:4px}
+.bubble .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.bubble .acts button{font-size:12px;font-weight:700;padding:6px 11px;border-radius:99px;background:var(--app-mint);color:#3F5C4A}
+.typing{display:flex;gap:4px;padding:13px 14px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--app-muted);animation:bl 1s infinite}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.slotgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.slotbtn{padding:10px 4px;border-radius:13px;border:1.5px solid var(--app-line);background:var(--app-surface);text-align:center;font-size:13px;font-weight:700}
+.slotbtn small{display:block;font-size:10.5px;font-weight:500;color:var(--app-muted);margin-top:1px}
+.slotbtn[aria-pressed="true"]{border-color:#F5A280;background:#FBEBE4;color:#8A4A30}
+.slotbtn:disabled{opacity:.45;cursor:not-allowed}
+.chip[aria-pressed="true"]{background:var(--app-pine);border-color:var(--app-pine)}
+.stepper{display:flex;align-items:center;gap:12px}
+.stepper button{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--app-line);background:var(--app-surface);font-size:17px;font-weight:700;line-height:1}
+.stepper b{font-family:var(--display);font-size:22px;font-weight:500;min-width:20px;text-align:center}
+.qgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.qa{display:flex;gap:10px;align-items:center;text-align:left;padding:12px;border-radius:15px;background:var(--app-surface);border:1px solid var(--app-line);font-size:13px;font-weight:600;line-height:1.25}
+.qa i{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--app-mint);color:#3F5C4A;flex:none}
+.qa:hover{border-color:#F5A280}
+.menu-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--app-line);align-items:flex-start}
+.menu-item:last-child{border-bottom:0}
+.timeline{position:relative;padding-left:22px}
+.timeline::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:var(--app-line)}
+.tl{position:relative;padding:0 0 16px}
+.tl::before{content:"";position:absolute;left:-21px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--app-surface);border:2.5px solid var(--app-pine-2)}
+.tl.now::before{border-color:#F5A280;background:#F5A280}
+.tl.sug::before{border-style:dashed;border-color:var(--app-muted)}
+.tl .t{font-size:11px;color:var(--app-muted);font-weight:600}
+.payopt{width:100%;text-align:left;display:flex;gap:12px;align-items:center;padding:13px;border:1.5px solid var(--app-line);border-radius:15px;background:var(--app-surface);font-size:13.5px;font-weight:600}
+.payopt[aria-pressed="true"]{border-color:#F5A280;background:#FBEBE4}
+.payopt .radio{margin:0}
+.payopt[aria-pressed="true"] .radio{border-color:#F5A280;background:#F5A280;color:#2A1B14}
+.qrbox{background:#fff;border-radius:20px;padding:16px;border:1px solid var(--app-line);display:grid;place-items:center}
+.hrow{display:flex;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--app-line)}
+.hrow:last-child{border-bottom:0}.hrow b{font-size:13.5px;font-weight:600}.hrow .h{margin-left:auto;font-size:12.5px;color:var(--app-ink-2);font-variant-numeric:tabular-nums;text-align:right}
+.price{font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;margin-left:auto;white-space:nowrap}
+.burst{background:#F5A280;color:#2A1B14;box-shadow:0 0 0 12px #FBEBE4}
+.step{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--app-line);width:100%;text-align:left}
+.step:last-child{border-bottom:0}
+.tick.done{background:#6B8574;border-color:#6B8574}
+.rowlist .menu-item{align-items:center}
+</style></head><body>
+<svg style="display:none" aria-hidden="true"><symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></symbol><symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol><symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol><symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></symbol><symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol><symbol id="i-fork" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3v8a2 2 0 0 0 2 2v8M11 3v8a2 2 0 0 1-2 2M7 3v6M17 21V3c-2.5 1.5-3 5-3 8h3"/></symbol><symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M5 5l1.8 1.8M17.2 17.2L19 19M19 5l-1.8 1.8M6.8 17.2L5 19"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></symbol><symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 4 1.5 5.5 1.5 5.5H5S6.5 14 6.5 10z"/><path d="M10 19a2.2 2.2 0 0 0 4 0"/></symbol><symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-6.1 6.5-10.5a6.5 6.5 0 1 0-13 0C5.5 14.9 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.4"/></symbol><symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12L20 4l-6 16-2.5-6.5z"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10.5h18M7 15h3"/></symbol><symbol id="i-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2v6h-4M14 18h2"/></symbol><symbol id="i-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8.5 7.5L12 4l3.5 3.5"/><path d="M5.5 13v5.5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2V13"/></symbol><symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></symbol><symbol id="i-gift" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8h14v-8M12 8c-2-4-6-3-5 0 .6 1.6 3 1.5 5 0zM12 8c2-4 6-3 5 0-.6 1.6-3 1.5-5 0z"/></symbol><symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/></symbol><symbol id="i-paw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="9" r="1.8"/><circle cx="12" cy="6.500" r="1.8"/><circle cx="17" cy="9" r="1.8"/><path d="M12 12c-3 0-5 2.500-5 4.500 0 1.500 1.500 2 3 1.500 1-.300 1.500-.500 2-.500s1 .200 2 .500c1.500.500 3 0 3-1.500 0-2-2-4.500-5-4.500z"/></symbol><symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.500A8 8 0 0 1 9.500 4a8 8 0 1 0 10.500 10.500z"/></symbol></svg>
+<header class="topbar"><div class="mark">O</div><div class="topbar-title"><strong>Octant&nbsp;Douro&nbsp;Guest&nbsp;App</strong><span>Concept prototype · a branded guest app for Octant Douro</span></div><span class="tag hot">Clickable</span><span class="tag">13 screens</span><span class="tag">iOS &amp; Android</span><button class="tag toggle" id="lang-toggle" aria-label="Language" title="Mudar para português">PT</button><button class="tag toggle" id="notes-toggle" aria-pressed="false" title="Presenter notes (N)">Notes</button></header>
+<div class="layout"><nav class="rail" id="rail" aria-label="Screen index">
+<div class="rail-group"><div class="eyebrow">Arrival</div><button class="rail-item" data-go="welcome"><span class="num">01</span>Welcome</button><button class="rail-item" data-go="home"><span class="num">02</span>Today</button></div>
+<div class="rail-group"><div class="eyebrow">Discover</div><button class="rail-item" data-go="experiences"><span class="num">03</span>Experiences</button><button class="rail-item" data-go="dining"><span class="num">04</span>Dining</button><button class="rail-item" data-go="spa"><span class="num">05</span>Spa &amp; wellness</button></div>
+<div class="rail-group"><div class="eyebrow">Book without calling</div><button class="rail-item" data-go="slots"><span class="num">06</span>Pick a time</button><button class="rail-item" data-go="checkout"><span class="num">07</span>Checkout</button><button class="rail-item" data-go="confirmed"><span class="num">08</span>Confirmed</button><button class="rail-item" data-go="pass"><span class="num">09</span>Reservation pass</button></div>
+<div class="rail-group"><div class="eyebrow">During your stay</div><button class="rail-item" data-go="chat"><span class="num">10</span>Personal assistant</button><button class="rail-item" data-go="services"><span class="num">11</span>Room &amp; services</button><button class="rail-item" data-go="offers"><span class="num">12</span>Offers</button><button class="rail-item" data-go="stay"><span class="num">13</span>My stay</button></div></nav><main class="stage"><div class="phone-wrap"><div class="phone"><div class="screen">
+<section class="view" data-view="welcome" style="background:linear-gradient(180deg,#E9F1E6 0%,#DCE6D6 38%,#FAF6F0 38.1%,#FAF6F0 100%)"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="app-scroll" style="display:flex;flex-direction:column">
+<div style="position:relative;height:218px;flex:none;display:grid;place-items:center;overflow:hidden"><img alt="Octant Hotels Douro" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAjAAAADmBAMAAAA5J6JHAAAAJFBMVEUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACmWAJHAAAADHRSTlMA/dFQjyxwrgAAAAA5dH9kAAAWdklEQVR42u2d+5Mc1XXHP909PRv0onsXNkFCMCuMy1hGtIQcXALBKAE7wZY0EkKOwaBZIUwVsQxK4sr/EMo2riSuClhmMI8qy0kxEo9UIRw2WMYpY2DAWGDAMJg3SN42tmw0r84P/Zjunn7Ozuyu7D6/7M70ne57zz2Pe7739D0SPpJ3Ft9V1U8ufocIkq4rvquOn3/uCwyD5DV/966qXtd8izkkwfd57VHd/H7Xi9XQH13wntVo8muhg1sF4hN9dWnbk+bdGftESBfOB6BdS3a/K+qwvHsnSfN8TMYY+Zr7nP/zp4U8WL6oe0G6KOQRIwtAOtIPX27YF9cFeZHZ9V8nu+GGGpw35XxcXYeT67G/Ej2fLuryhcbbWjBfvuzqbftQKfi+7X5FeOc+Vxd+VY5oadzc1wO0ZM08jJn0TFDj7cBBX1TxMODQYFV7zX2esR+IGsa9w7QxbsZ83qcWjceDeu6T7vZZg+zOyKs+qXgjonFTmx3G5B/ueXKvsOZe9X/z62Kg3+qrN9LSHpU8O6L5m7PDmAt7r37Xr0zy8t5Gzw+uN9fqPV8diTAz7VlhzEiABzB+6PtiY2/PaZw9qM7kglzcAwM3v+kYIy8Nutzxzpf0aFCjI4PS9d2BYlEM/8HdfTyknpIxQbIAPOT5tCr4Jq8HGMZ+LG8l8OsIVW2Xhy8xT4dYfvej5RBud0oD6cuNwV83IkTm/qGvY0Q9waM/F3aXH/Wqfx8WphJy4bnw3wxoSiIYc1OSR9eG6h6u6UdhaqkfU004TcGzNX5mobPkDt+jR/SeRq+susN0D7f67luaSr2G8fV4fPkKuwsRCvOHYUmMxZhzPdZjbFHtF8D2ZRXPo9d5puf6h2u/gEfMRvf2aftdtMnDyjH1iV8A0iVPA53goG2hDo1i2hnQ06iSx6oKa182ObDvG1uAhi3IkpsvwrZ/sRr9mxa0Ok/vwQuewONlE7Jo/88EQOB6xdAADqcFe1LZGHfEJGw66Pz/nRLwYIA9zZ9xu+O3DmnJ5yGc8hU313/g/P/URFi42HkQoFkapvG9ytWpM9zm5u5y17JeQjBQ0nxMgd/NVJU+69aq210fntLCRt/Qgj1iJHVSMcZl9zZ5DEnzX8Eo+zVJ8AJI7begXZqhKrk0aa3XEzzm1zOHHu/DI0ppGJPrft7lc0+tks02lyat8jnJ41qP36ym5IvUfe7owd6Y4K7AHx1X0gdMqSRmY9c03eJvcI/Ntx3d3/Q4gh/C7/uy/QELQumXAWGkEbGKvXd4EuMIqtAbSTZKlpo43Miv72nUKtPqy/Y7tCNied0s2OrspwPp8apmCsZ0xXhJwELyLpNxeUcGzglQk2/6ut6h3/WoGBAY/Nw1LV4tK6XGqzanYIxjYvJBvqSlcI+b0/JUsIBORe3KJFxngrA+yP2U/ZqKG/ZtDwF1QAQ+7shCYBMFEXAE4vIQ+PX3M0E2nbEtCbTat/o0dQbmV0vBGDusl4Ll9Wc0Sl2BkINj4P/1dj0tHGOzXaiHLFdDjAyr0+JVSnLGOEP9BGF7cjqSHiUwIFgr9JSabJPN9iUhkIwSYmTM+DINXlVNzhjbFeanQncp6o4RCBEY2grFPubFllU9UmCgyLGQzpXS4VWynpwxtgf5Qrj0/dYRlI8T2vV7+o8IcnGm6c5Q5OuudHhVJ0WsdJ41W7eGtXmInL1gy4cG+RWPJ0rJmIb1d1k458JcT6ucCq8SUjCmGOdIWjRK1khPilhRtvoQWK/tlWsRC+Mwd/LNVHhVGomp9Ia3Pb70TT3O2RkYpb6XMUqMntL0mrCelUEUYN7X+g7RlpR8JWpCLchBDrfpbcUVH7VSgkfms4UIMK5IWP+ahTR4lZ6cMUKcksAUe/HjNj1UchmWzX1lL0mRAwq9+vM0eFU9OWM68Q62kOS2usuj6n0xZmVEk/3h6mniVVOp1gVJGGM6pXwtslexmgS6q+t9OaUoTUKOMJuP92ZAxcZkCRhj2tPjSQDkBdFLSocx+ZQSU4q32G23be8/YLo8BWMUV99iQjwtWh+afdpeqwvXxHhPJTowvDf1VkQMY6oAQiXBdmW+Gi1Wzpxe0hdj6jFzE349MV4lVZIzxlyLCUlAgQ7Jui7X+kGppGrM3IQzJjFelWJHXTRHuzjJBvdKkgn751LyJcncNCNdXVK86qYUjBGSR8NKMhAoP0U/Wz0rZwBjJzS/ayop4loJQKglAJClaiKVkBc6Er4iou0r/hE/uyLy3tOR6z9tKgFeJTqJlR9EPEswdylyzcTuXYhFJ3WfJZpOIzHG9AzivwcWAe1yJaGFiXqWZTfEze6wP5KuHtiGeX9bPVHN0uJVSbdotTTw4wBi+r62eiKb3TXo/CqxntT2xtghpH6znvtJS5spXpWAMRogVBOoiMiwJCbhPBuR7b454PwqMbHtNeK50qfE1AcxkHR4VUJVMpJIwmLmNZl41c8GKzELBxF/Sf1lPQ9Msn4+WPMrasnGHA8+9c+VwWTcp8GrkkqMnkSVarPgW2bEwBR4VVLG1BIwJj8g3zI86ie/KoIx1QRjNpLErspcM6af/KpoEDR2zKWpBJpybAXaXqC9tQZS61XInxl+Z22v9/PWaKnVOgk24w8sAZpa6J3ErTXQXqnBaDH8cedWHMYYSYQhVnn3wZMA5lZLbjG0fhLe+knfsnpv9M2fFBIIZLtUJQqvau8FnlwNLN8b2zOxlGDMSlKXHvXq8swokQVLnF9VSNb5ZhKcpTS04HAOzG8tGWOUJNBjLb20KHNjfu+Ol5YkElOLFwYh3cbDHDrwB5LlVwnVZDMbJwytPrtZm3XGDBCvEgsJUydq6dMwC7POmCR4VTUZ0ijW4gegM7ceiYHiVcLgBlDv08bU5oAzifCq9mBUSdI5AVx1YrwqIWIv7h9g6sQ8CJ3i8ar2wFTpcoYI5A6cYvEqMemmPgzB9s6NgUmEVyWVGCMOMrRyF+oM5S3ewVMcXpVUYtoJdwe09O84aswdXlWMyoxNspshinED2Nhf//Yzp3jV4Sjrl8Rlik0l5oUMvb/NH3lA+0XpKS6/Sk/olQrRLe30KC39vuvcqBJtDaLwKj0Rbp+jUJOTrBIrkdwrATSr3t9FSuKVAHx/KOZ3QaTz2X8ypWpsz3Ke/NwA2lFNsGD8cqXH3rcJe8UIgPwjAKQ+siKR+V2qBx1QklDJtzwCIIjsj9yLd3KehfhzGdq+FxA68ScWFOYArzKSpMHLYjdpPsrrq0lGWQ7NFA9FXSvDM7+heFW09bMmuSUiROZXWK9VTEQyphZk7vWo5YL1+DzDMb+ReFVTiZoPa5LbIk0lwi3ZCYlHve+C+gy4HjT9D9EIZ/jK4W7rRuNVxagpsya5LEIhwhZtspuXI/TSynXPp1BlfbiMicar9AjAwD5uako03wWN4Z+EHh4V2va51fNKiRL3+KuZC7zqoYhkzHX2wEXYH85AewAClXB7YCeCL+55L+6euMdPMRd4leH3Ey7b50iCCLlwY2APYKH3XdBggKHQk+UZpim5WrJ8R4aDVzXCZ2SlszgRoRG6nLAHQBEh9BAB52hBv+I803MMkU3rZ4QNzhyv0sKMh1R3cppFQAs50McZABWa5bAV/pmEvLSTC2O4w29j2HhVLQx2DXnyqq60ixHtnAHIwBQj0QLTCTiQ4a5ofq9kyHjVB2HWNxivcQRGqCEC94e0W+9+Z/EZaxL8LunM8Iz6YjDDHX4PFTCPwqs6lqr56VqXsItmGBRkprq5PCWzUVAk/wk9PKP+zuCO7Q47RHLW8KpmOTD47p6zvMBKA9GCzFT3UGOhYoYeATfL1f2OzmtkDke9NCQwV3hVPTBZZLd770e0Jrv3mL2LfRtLdYweWyrvjkqXbyje44BNBr7KbJiYaLzq/qDge3XFPcmiZVxbWqgiWW8VPwQf+OXqi5XIUSr+E6RB/nvnX2GK4W8XtMPyN3pO3O4KPx0bVmgo4KvAknvUn197vPdsdVchg8BRHoZmMbTcw3A1KTq/qtRz4nZ+sXeZ57yv1PxqWDPbRpag4xnm5x+OySE4DjxbCquVcQ1zl191LzQ8lSYk19E1wpTDmAeBb7vMwTZ3KuIiV+rfs65GFzwce3xzAQxXdRR5suo5qoxZ2C4Ixqs6wK+/6j5tVvdNsmgfNAcHLrOv3PCDoEz144Bx4HqnDtOLrjYhxxX9zFM3RvpydVYzaMyI5MFCWOrVt//R/rh2mRuSOtf1ouFpdeCt0896C+Q1n/dExbKTknuODhz+SuMtuHKB963zXPABfp3TPgTjV+vOewGuuPhlz09WOcZu9QsIcSkt59ThY3boawb6sb/huRHA+FQN/qIedOnpRVef8QLy2u2Pfuie5OfdR7dY56wJpzb9L5jucIQhv9AGgHvej90cAhZumbJ/Yvhgwvy7XcNTja+VtGWq+xCrvpJ4NFZm9tjdOq/HN0xYtbOUnp7l3ncJtB0HG+/5h+xSEjsmmJ6eTnpmwgHsn/jh05NglvKrIl9lMXp7tsyj6XeF3WCJf2UQRF+MVvPhvaTU/xvJD0RlJboY09ISDOB4SNSXD3cw96Sp/zIkvCrdpY0+3/DDJAN4LbjRF+JwkV5aBrOWXxVMzxJ1kFiXMcEiI1wYVTwnXmDCzjrP1WYzvypYywuRiXVi9Aj8p8h+K9CVRnatEM/vYQdMIc48yDA45yyLkSOQ/O7/eIAxlaODwaDnX1tlNvOrQqxMQIHO7jnLrvXnc+XQnZEufbfnQcK6GAPY+3z5VpjV/KoQpvVeW1UNYEzz3/3NdvUuT9qvh98r7PmllKwcfMAUQo/5Z3l0KjBiaXza1+yWIChjwse8eFTlDt/MbKoy2/lVIdd8MJb75H9PKPc9D2dO/WXg3Z7ycGbnLQk6d8jdOaEnfKjPlfml4cltki4KjXG/99dd4fJEzx7OfLT7/5qvJVpnHVrd9e2bevRzQlVPjbvFQ6qqOrebVFVVVUcTmt9JVVULoZzpGtZTPXV1/QCTWdAIxi++PWKlbTUaW5R4ObJteSW2KPKckGwVv81vuj3m7R3p/CWseDqmIvMVY6/EN/L9RK1z5tF5xhYAefUSxOknyCijjDLKKKOMMsooo4wyyiijjDLKKKOMMsooo4wyyiijjDLKKKOMMsooo4wyyiijjDLKKKOMMsooo4wyyiijjDLKKKOMMsooo4wyyiijjDLKKKOMMsooo4wyyiijjDLKKKOMMsooGcmljAdBJO0Zz5gQQNsn1D+fp12bafUneRKA96oAf6kB/CTxWba5xZ4aKPOKZlrcU/w+ADsA8i+9lO6W7XkszDOtctQ0/1R9RZ1mXJrkhGeMYNfKBAwlZQmy1mV/1H5FVUfL1v8bVFW9Ps2vJ/9ojS+IJ3NyHac0VYJyUC5aXZ+vxlccxB0KdMsRhxjU3EdPME0QB1pGI9zurj/yp8iY+IWLVONPkTHxtImMMX3KVCxdeeUJtfIlqqhD267PsPVRj15d1+4t3HBFXXxCOrcWWm/i4COM7nykdgK569zibhVGaUm36uLO+4C1B50qlILCGVMAF7zoXOi66533gWDI7wU/I29X/uyt93jCqdLkfQA/vdlxVsb0dA1g64sAPy16Wm+9DzDsAKPHdC/T84rwkbPLPKOdmO66SyOWrtypYZaedybf0ipPVWX5UVAVoBx4/2v1ne8Wck/85Bsl3jgx3XX3bjeC8CUFeB24X1VAVdUScDWMrThLoXGzN8ze/MobmjcY7fKyKn6NugHcUQ4uRjw/gQtVdcaYV1UzkBxR1fES8k6LG2yxYyJZVcfNH40DrDa/X62OAfKEekrQE7aoGrJZImlEHTuRJOZO1SKnTPZVCOuqNL9T9nvqNqwDWmVauGvMLzbL4AWWaNXlGoIZdxxXjBPb+FatuurfAm/B5x2IVYA6RrnHSB3X0IM0dQEI1hXF0E5kxuThs3aZxpbnypQF1+wHT8m9Y1bd10IQnFWApnXlGRP6YfulFryxvQRwBYB8PZxvXrxumPV9k7J2hLy2dOnSpUuXLh9/Bz4EjD8TfoxdVvpj78A5dekYgGSgvwNsP/YhdR1O06VjwEnvGJ95Aeis/O+AxV3+UzW03zxtfajrwJon3z68+3GQiz8q/h/k3/zYO2w79tyxyR//zQtc8MTbz+9+fF4ZX8kyvlscKyqqatFlfPOmMb5BVc3vHeOrnhK6wZRXNZg8xTbep5q23TTrq1W1DIhqCUlVx0fUUcjZF+dhdK049815VzkCVJE27ANhm2sR+wy0H7suap3UNbodYClrLt1CDSZABzbnq4gKxo2IsJudl25haj5ITNEvMRscryqZpQhtiRHVUbZPqKp6iskuS2JkVVVV9SMeuyo7/6hla/kHoI7DiHo2yBNjwIZRgElzCTA6+g9j5NQxYOKUeR5di7ZddUC+Gw7qsPOIR8qanwY4+poLHM+fbmN+TUVBctbECrBOeAmaxRygywD1NmBgnPH1o1zDekDpzHPGNHuK+u4DYZu/7ub3zHKlrgjqav19W4CKFcdbgw5yTQLQm9gqVm8Dgln1vSpWgWeM0vxkTJS3GwsozvmUWdP02VJ3JeTw4l6Njv1Bpo3BSoD9Rgk0A5D1MtDhXCCfYvtmLhjT6dmTc2jny0ER0X++sR0wan4LAxyfYrNQte8r0nZZ1spC7NWfgQK0BlTadjiMKbglRvFa1FxI+drmf1ymwO9cKuhSBkV2JLFJOQ/AZqrm4s9ijCZVgfOE6jxmTI2GNSpZ94AOIZsrJmq5702XpCmeqsaOt25RNgNt0/ebLGkIVaeNZo7ImCl/hsUY2yZ08IQ/RuATpUdMn9Mo4djMZyd3uYZWtRlzHjqayV5FhA4FoCw6FthmoSbP11ip5izwdK/ENCxnI1/vAp7vt8L0rpi0v+6qpC3rCx2nVKEqOlK0OV8FproWuEfE5heC14IR87/LyVd9Ta2y5Bv/y9W8U4rsjWAHlzm9u+6rLLakJKeLdONv8x41Y14ieO0yjaJ1qeMLFmhpAJJr46Ct8CPbyReCGWOJ3TVc1X1W0RKMjSx0temYMrhyzhnTcVlJwfazdXi+BGzV7R42TXF5EHijBNJX3Ds3isWtywm2mQ2L97mqUIeSAHCVUIH6YpBrFICm+dOaYDJwaq4ZI90Ef7DNxoXQuh7gADQOffLKCx4lb/XQKMs734BGGdqP/dM/L6lwFchFGmXgMLytgVwL6Y9mOmhpOWNV0FtAviqBrAMbdTOQNKdEaZso8VyHkNKEqtoJMvIe1YYTmLTRzptt9EE1ExFH7AujJfPHo0WQVFUd/fSuPaqqBD9kFJDXWqmMovpVpD1q2QQh8upnVG6wAkkYUc9C3qOWmeMNN/FkADNDJm+6DvGovccGSEdwttzIvQ9ssCzSKS8hKADye7CnYt3vkmrwdtt4E0NH2FQB5EWohi4eBSb0L+37vb7gS7ddUt1z9/s4F8N27mZPlSwnUfLfsv1bK0a2zKsGsAzgkDmZp75kz0qbrpXaEWRiWjq8Nz2tM35GBaA5wbSeX28ap9t+87cGt0lVMziA5gamdWEpc57OuqMOsKgKsKsOYCEK20+/g7FFtsOSvlIRzj9o7UM/rAurfwDIlwCcXoHckm2vvajbLfyatAGAFe299jc3HBTNO0s3PXjx7fzVmyfV2HWk6rs4I/p/ghZHjDxNh4QAAAAASUVORK5CYII=" style="position:relative;width:236px;height:auto;display:block;margin-top:-14px"><img alt="" aria-hidden="true" src="data:image/png;base64,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" style="position:absolute;right:-6px;bottom:-34px;width:96px;height:auto;opacity:.92"></div>
+<div class="pad stack" style="gap:14px;margin-top:14px"><span class="a-label">Castelo de Paiva · Douro</span>
+<h1 class="a-h1" style="font-size:36px">Time for what you never want to forget.</h1>
+<p style="font-size:14.5px;line-height:1.55;color:var(--app-ink-2)">Check in, open your door, book the spa and the river, and reach your personal assistant, all from your phone.</p>
+<div style="display:flex;gap:20px;margin:4px 0 2px"><div><b style="font-family:var(--display);font-size:25px;font-weight:500">km 41</b><div style="font-size:11px;color:var(--app-muted)">of the Douro</div></div><div><b style="font-family:var(--display);font-size:25px;font-weight:500">2026</b><div style="font-size:11px;color:var(--app-muted)">RAIVA in the MICHELIN Guide</div></div><div><b style="font-family:var(--display);font-size:25px;font-weight:500">24 h</b><div style="font-size:11px;color:var(--app-muted)">indoor pool &amp; gym</div></div></div>
+<button class="btn amber" data-go="home" style="margin-top:8px">Add my reservation</button>
+<button class="btn outline" data-go="home">Sign in</button>
+<p style="font-size:11.5px;color:var(--app-muted);text-align:center;margin:2px 0 22px">Use the reservation number from your confirmation email</p></div></div></section>
+<section class="view" data-view="home"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><div style="margin-right:auto"><span class="a-label">Friday, Oct 16</span><h2 class="a-h2" style="margin-top:1px">Good afternoon, Sofia</h2></div><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" id="home-body" style="gap:20px;padding-bottom:16px"></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="experiences"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Experiences</h2><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" id="experiences-body" style="gap:16px"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="dining"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Dining</h2><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" id="dining-body" style="gap:16px"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="spa"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Spa & wellness</h2><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" id="spa-body" style="gap:16px"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="services"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Room & services</h2><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" id="services-body" style="gap:16px"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="offers"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">Offers</h2><button class="icon-btn" aria-label="Notifications"><svg width="18" height="18"><use href="#i-bell"/></svg></button></div>
+<div class="app-scroll stack" style="gap:16px;padding-bottom:16px"><div class="pad stack" id="offers-body" style="gap:16px"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="slots"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><button class="icon-btn" data-go="experiences" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button><h2 class="a-h2" id="slots-title">Book</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="slots-body" style="gap:18px"></div></div></section>
+<section class="view" data-view="checkout"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><button class="icon-btn" data-go="slots" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button><h2 class="a-h2">Checkout</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="checkout-body" style="gap:16px"></div></div></section>
+<section class="view" data-view="confirmed"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="app-scroll stack" style="gap:18px;padding:14px 0 18px"><div class="pad stack" id="confirmed-body" style="gap:18px;text-align:center"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="pass"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><button class="icon-btn" data-go="confirmed" aria-label="Back"><svg width="18" height="18"><use href="#i-left"/></svg></button><h2 class="a-h2">Reservation pass</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="pass-body" style="gap:16px;text-align:center"></div></div><nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="chat"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><div style="margin-right:auto"><h2 class="a-h2">Personal assistant</h2><span class="a-meta" style="display:flex;align-items:center;gap:5px"><i style="width:7px;height:7px;border-radius:50%;background:#6B8574;display:inline-block"></i>Online · Octant Douro</span></div><button class="icon-btn" aria-label="Call"><svg width="18" height="18"><use href="#i-phone"/></svg></button></div>
+<div class="app-scroll stack" id="msgs" style="gap:10px;padding:6px 20px 12px"></div>
+<div class="chips" id="sugg" style="padding-bottom:6px"></div>
+<form id="chat-form" style="flex:none;display:flex;gap:9px;padding:6px 16px 12px"><input id="chat-inp" autocomplete="off" placeholder="Ask anything…" style="flex:1;min-width:0;border:1px solid var(--app-line);background:var(--app-surface);border-radius:14px;padding:11px 14px;font:inherit;font-size:13.5px;color:var(--app-ink);outline:none"><button class="icon-btn" style="background:var(--app-pine);color:#fff;border:0;width:44px;height:44px;border-radius:14px" aria-label="Send"><svg width="18" height="18"><use href="#i-send"/></svg></button></form>
+<nav class="tabbar" data-tabbar></nav></section>
+<section class="view" data-view="stay"><div class="statusbar"><span>4:12</span><span class="sb-right"><i class="sb-bar" style="height:5px"></i><i class="sb-bar" style="height:7px"></i><i class="sb-bar" style="height:9px"></i><i class="sb-bar" style="height:11px"></i><i class="sb-batt"></i></span></div>
+<div class="appbar"><h2 class="a-h2">My stay</h2></div>
+<div class="app-scroll stack" style="gap:18px;padding-bottom:16px"><div class="pad stack" id="stay-body" style="gap:18px"></div></div><nav class="tabbar" data-tabbar></nav></section>
+</div></div></div><div class="stage-hint"><span class="dot"></span>Everything is clickable: book the river, the stars or the spa, check out, message your assistant. Arrow keys switch screens.</div></main>
+<aside class="notes"><span class="eyebrow" id="n-group"></span><h2 id="n-title"></h2><p id="n-lede" style="font-size:13.5px;color:var(--muted);line-height:1.5"></p><ul class="n-list" id="n-list"></ul>
+<div class="n-why"><span class="eyebrow">Why it matters for Octant Douro</span><p id="n-why"></p></div>
+<div class="n-nav"><button id="prev"><svg width="15" height="15"><use href="#i-left"/></svg>Previous</button><button id="next">Next<svg width="15" height="15"><use href="#i-right"/></svg></button></div>
+<p class="n-foot">Concept prototype, not a live product. Availability, times and guest details are illustrative. Experiences, prices, rules, restaurants and facilities are taken from the public Octant Douro website; spa prices are placeholders. In production this connects to the hotel's reservation, spa and billing systems.</p></aside></div>
+<script>(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)};
+var LANG=((new URLSearchParams(location.search).get("lang")||"en").toLowerCase()==="pt")?"pt":"en";
+var DICT={"Octant Douro Guest App": "App de hóspedes Octant Douro", "Concept prototype · a branded guest app for Octant Douro": "Protótipo conceptual · uma app de hóspedes com a marca Octant Douro", "Clickable": "Interativo", "13 screens": "13 ecrãs", "Arrival": "Chegada", "Welcome": "Boas-vindas", "Today": "Hoje", "Discover": "Descobrir", "Experiences": "Experiências", "Dining": "Gastronomia", "Spa & wellness": "Spa e bem-estar", "Book without calling": "Reserve sem telefonar", "Pick a time": "Escolha a hora", "Checkout": "Pagamento", "Confirmed": "Confirmado", "Reservation pass": "Passe de reserva", "During your stay": "Durante a estadia", "Personal assistant": "Assistente pessoal", "Room & services": "Quarto e serviços", "Offers": "Ofertas", "My stay": "A minha estadia", "Assistant": "Assistente", "Services": "Serviços", "Everything is clickable: book the river, the stars or the spa, check out, message your assistant. Arrow keys switch screens.": "Tudo é interativo: reserve o rio, as estrelas ou o spa, pague e escreva ao seu assistente. As setas do teclado mudam de ecrã.", "Castelo de Paiva · Douro": "Castelo de Paiva · Douro", "Time for what you never want to forget.": "Tempo para o que nunca quer esquecer.", "Check in, open your door, book the spa and the river, and reach your personal assistant, all from your phone.": "Faça o check-in, abra a porta, reserve o spa e o rio e fale com o seu assistente pessoal, tudo a partir do telemóvel.", "km 41": "km 41", "of the Douro": "do Douro", "RAIVA in the MICHELIN Guide": "RAIVA no Guia MICHELIN", "24 h": "24 h", "indoor pool & gym": "piscina interior e ginásio", "Add my reservation": "Adicionar a minha reserva", "Sign in": "Entrar", "Use the reservation number from your confirmation email": "Use o número de reserva do email de confirmação", "Friday, Oct 16": "sexta-feira, 16 de outubro", "Good afternoon, Sofia": "Boa tarde, Sofia", "Your stay": "A sua estadia", "Octant Douro": "Octant Douro", "Panoramic Suite · Raiva, Castelo de Paiva": "Suite Panorâmica · Raiva, Castelo de Paiva", "Oct 16 – 19 · 2 adults": "16 – 19 out · 2 adultos", "Unlock door": "Abrir a porta", "Stay details": "Detalhes da estadia", "Indoor pool": "Piscina interior", "Gym": "Ginásio", "Sunset cruise · Sat": "Cruzeiro ao pôr do sol · sáb", "Your plan today": "O seu plano de hoje", "3:00 PM": "15:00", "Check-in · suite ready, digital key active": "Check-in · suite pronta, chave digital ativa", "Panoramic Suite · breakfast included": "Suite Panorâmica · pequeno-almoço incluído", "7:30 PM": "19:30", "Dinner at À TERRA": "Jantar no À TERRA", "Table for 2 · Confirmed": "Mesa para 2 · Confirmada", "Suggested": "Sugestão", "Tomorrow at sunset: the Douro from the river": "Amanhã ao pôr do sol: o Douro visto do rio", "Reserve · € 90 per person": "Reservar · € 90 por pessoa", "Quick actions": "Ações rápidas", "Your assistant": "O seu assistente", "Online · Octant Douro": "Online · Octant Douro", "Weekly programme": "Programa semanal", "Luxury is discovering something new": "O luxo é descobrir algo novo", "The ultimate sunset": "O pôr do sol perfeito", "Shared Barco Rabelo · 1 hour · Sat 17": "Barco Rabelo partilhado · 1 hora · sáb 17", "€ 90 per person": "€ 90 por pessoa", "Octant I · private river cruise": "Octant I · cruzeiro privado no rio", "Up to 12 guests · from 1 hour": "Até 12 pessoas · a partir de 1 hora", "From € 350 per booking": "Desde € 350 por reserva", "Astronomical observation": "Observação astronómica", "With two astronomers · 22:00 – 23:30": "Com dois astrónomos · 22:00 – 23:30", "From € 180 per person": "Desde € 180 por pessoa", "Be my Guest": "Be my Guest", "Private 8-moment dinner by the chef": "Jantar privado de 8 momentos pelo chef", "€ 220 per person": "€ 220 por pessoa", "Casa de Algar": "Casa de Algar", "Vinho Verde estate visit and tasting · Thu–Sat": "Visita e prova na quinta de Vinho Verde · qui–sáb", "€ 45 per person": "€ 45 por pessoa", "Douro through the ages": "O Douro através das idades", "45 min tasting journey from youth to old age": "Viagem de prova de 45 min, da juventude à velhice", "From € 45 per person": "Desde € 45 por pessoa", "Canyoning": "Canyoning", "Ardena River · 4 h · from age 12": "Rio Ardena · 4 h · a partir dos 12 anos", "From € 428 for 2": "Desde € 428 para 2", "Don't miss": "Não perca", "Paiva Walkways": "Passadiços do Paiva", "Picnic on Ilha dos Amores": "Piquenique na Ilha dos Amores", "Kayaking or paddle boarding on the river": "Caiaque ou paddle no rio", "Serra da Boneca Swing": "Baloiço da Serra da Boneca", "Ask your assistant about this week": "Pergunte ao seu assistente sobre esta semana", "MICHELIN Guide 2026": "Guia MICHELIN 2026", "À TERRA & RAIVA": "À TERRA e RAIVA", "Two restaurants on the river": "Dois restaurantes junto ao rio", "À TERRA": "À TERRA", "Wood-fired, shared dishes · lunch, dinner and kids": "Lume de lenha, pratos para partilhar · almoço, jantar e crianças", "Table": "Mesa", "RAIVA": "RAIVA", "Chef Dárcio Henriques · tasting menu": "Chef Dárcio Henriques · menu de degustação", "Pool terrace": "Terraço da piscina", "Ofyr grill by the pool · panoramic views": "Grelhador Ofyr junto à piscina · vistas panorâmicas", "Private dinner · 8 moments · 2 to 4 guests": "Jantar privado · 8 momentos · 2 a 4 pessoas", "At À TERRA the kitchen begins with what surrounds it: the garden, the river and the local producers.": "No À TERRA a cozinha começa com o que a rodeia: a horta, o rio e os produtores locais.", "Spa": "Spa", "VOYA rituals": "Rituais VOYA", "Organic seaweed skincare from Ireland": "Cosmética orgânica de algas da Irlanda", "Organic facials, personalised massages, sleep rituals, body wraps and bathing experiences, in five treatment rooms.": "Tratamentos faciais orgânicos, massagens personalizadas, rituais de sono, envolvimentos corporais e experiências de banho, em cinco salas de tratamento.", "Book a ritual": "Reservar um ritual", "Spa facilities": "Instalações do spa", "Heated indoor pool": "Piscina interior aquecida", "Open 24 h": "Aberto 24 h", "Sensation shower": "Duche de sensações", "Sauna & Turkish bath": "Sauna e banho turco", "River views": "Vista para o rio", "Children up to 12, indoor pool": "Crianças até 12 anos, piscina interior", "9:00 AM – 4:00 PM": "9:00 – 16:00", "Visiting Practitioner Programme": "Programa de Especialistas Convidados", "Guest specialists, through the year": "Especialistas convidados ao longo do ano", "Ask": "Pedir", "Book table": "Reservar mesa", "Book stargazing": "Reservar observação das estrelas", "Book river cruise": "Reservar cruzeiro no rio", "Book sunset cruise": "Reservar cruzeiro ao pôr do sol", "Book private dinner": "Reservar jantar privado", "Book wine tasting": "Reservar prova de vinhos", "Book tasting journey": "Reservar viagem de prova", "Book canyoning": "Reservar canyoning", "Book spa ritual": "Reservar ritual de spa", "Book": "Reservar", "Fri": "Sex", "Sat": "Sáb", "Sun": "Dom", "Mon": "Seg", "Option": "Opção", "Duration": "Duração", "Guests": "Pessoas", "Adults": "Adultos", "Passengers": "Passageiros", "No charge": "Sem custo", "Add extras": "Adicionar extras", "Included": "Incluído", "Total": "Total", "Continue": "Continuar", "Fewer": "Menos", "More": "Mais", "Reminder": "Lembrete", "Reminders": "Lembretes", "No payment now. RAIVA is featured in the 2026 MICHELIN Guide.": "Sem pagamento agora. O RAIVA consta do Guia MICHELIN 2026.", "Prices are illustrative. Today spa bookings are made by email.": "Os preços são ilustrativos. Hoje as reservas de spa são feitas por email.", "Guided by two astronomers with two telescopes, about 90 minutes. Teenagers 14–18: € 80. Children under 14: free. Weather decision by 12:00; free cancellation up to 24 h before.": "Conduzida por dois astrónomos com dois telescópios, cerca de 90 minutos. Adolescentes 14–18: € 80. Crianças até 14 anos: grátis. Decisão sobre o tempo até às 12:00; cancelamento gratuito até 24 h antes.", "The boat takes 12 guests plus 2 skippers. Book at least 48 h ahead (72 h with on-board service). 20% deposit to confirm.": "O barco leva 12 pessoas mais 2 skippers. Reserve com pelo menos 48 h de antecedência (72 h com serviço a bordo). Sinal de 20% para confirmar.", "Shared Barco Rabelo for one hour at sunset, one drink included. Children 0–3 free, 3–6 half price. Meeting point: Fluvina.": "Barco Rabelo partilhado durante uma hora ao pôr do sol, com uma bebida incluída. Crianças 0–3 grátis, 3–6 meio preço. Ponto de encontro: Fluvina.", "Eight moments by Chef Dárcio Henriques, for 2 to 4 guests, about 2 h 30.": "Oito momentos pelo Chef Dárcio Henriques, para 2 a 4 pessoas, cerca de 2 h 30.", "A Vinho Verde estate: three wines and regional tapas. Thursday to Saturday. Transfer not included.": "Uma quinta de Vinho Verde: três vinhos e petiscos regionais. De quinta a sábado. Transporte não incluído.", "Youth, maturity and old age: white Verde wine, aged red, port, with olive oil, ham and cheese.": "Juventude, maturidade e velhice: vinho verde branco, tinto envelhecido e vinho do Porto, com azeite, presunto e queijo.", "€ 428 for 2 people. Minimum age 12. Guide, equipment, insurance, photos and transfer included.": "€ 428 para 2 pessoas. Idade mínima 12 anos. Guia, equipamento, seguro, fotografias e transporte incluídos.", "Restaurant table": "Mesa de restaurante", "Spa ritual": "Ritual de spa", "Be my Guest · private dinner": "Be my Guest · jantar privado", "Casa de Algar · visit & tasting": "Casa de Algar · visita e prova", "Canyoning · Ardena River": "Canyoning · Rio Ardena", "RAIVA · tasting menu": "RAIVA · menu de degustação", "Pool terrace · Ofyr grill": "Terraço da piscina · grelhador Ofyr", "VOYA organic facial": "Tratamento facial orgânico VOYA", "Personalised massage": "Massagem personalizada", "Couples treatment": "Tratamento a dois", "No wine pairing": "Sem harmonização de vinhos", "Non-alcoholic pairing": "Harmonização sem álcool", "Sommelier pairing": "Harmonização do sommelier", "Douro pairing": "Harmonização do Douro", "Shared": "Partilhada", "Exclusive (€ 60 per person)": "Exclusiva (€ 60 por pessoa)", "Window table request": "Mesa junto à janela", "Celebration dessert": "Sobremesa de celebração", "Sleep ritual add-on": "Ritual de sono adicional", "On-board service (72 h notice)": "Serviço a bordo (72 h de antecedência)", "Garden picnic (from € 35)": "Piquenique no jardim (desde € 35)", "Transfer on request": "Transporte a pedido", "Lunch on request": "Almoço a pedido", "Pay with": "Pagar com", "Charge to Room": "Debitar no quarto", "Settled at check-out": "Liquidado no check-out", "Apple Pay": "Apple Pay", "Face ID": "Face ID", "Saved card": "Cartão guardado", "Pay deposit": "Pagar sinal", "Confirm & pay": "Confirmar e pagar", "Confirm booking": "Confirmar reserva", "No payment needed.": "Não é necessário pagamento.", "Free cancellation up to 24 h before.": "Cancelamento gratuito até 24 h antes.", "Free cancellation up to 48 h before.": "Cancelamento gratuito até 48 h antes.", "You're booked.": "Reserva confirmada.", "Reservation OD-70215 · also sent to your email": "Reserva OD-70215 · enviada também por email", "Directions": "Como chegar", "Remind me 1 hour before": "Lembrar-me 1 hora antes", "Show reservation pass": "Mostrar passe de reserva", "See my stay": "Ver a minha estadia", "Meeting point: Fluvina": "Ponto de encontro: Fluvina", "Show this to your host or skipper. They scan it, no paper vouchers.": "Mostre isto ao anfitrião ou ao skipper. Eles leem o código, sem vales em papel.", "Send to a guest in my party": "Enviar a um acompanhante", "Reservation pass QR code": "Código QR do passe de reserva", "What time is check-out on Monday?": "A que horas é o check-out na segunda-feira?", "Request late check-out": "Pedir late check-out", "Check-out time": "Hora de check-out", "Pets": "Animais", "Tell me about the stars": "Fale-me das estrelas", "Where can I eat tonight?": "Onde posso jantar hoje?", "Talk to a person": "Falar com uma pessoa", "Ask anything…": "Pergunte o que quiser…", "Call": "Ligar", "Send": "Enviar", "Notifications": "Notificações", "Back": "Voltar", "Book the sunset cruise": "Reservar o cruzeiro ao pôr do sol", "Book the tasting": "Reservar a prova", "See dining": "Ver gastronomia", "See offers": "Ver ofertas", "Request pet kit": "Pedir kit para animais", "Your suite": "A sua suite", "Panoramic Suite · river and mountain views": "Suite Panorâmica · vista para o rio e a montanha", "Your personal assistant": "O seu assistente pessoal", "Direct line · or message from the app": "Linha direta · ou mensagem pela app", "Chat": "Conversar", "Request": "Pedir", "Pillow menu": "Menu de almofadas", "Choose from the pillow menu": "Escolha do menu de almofadas", "Yoga mat": "Tapete de yoga", "Delivered to your suite": "Entregue na sua suite", "Wine fridge restock": "Reposição do frigorífico de vinhos", "Contents at an additional cost": "Conteúdo com custo adicional", "Late check-out": "Late check-out", "Subject to availability": "Sujeito a disponibilidade", "Pet kit": "Kit para animais", "Bed, bowls, toy and biscuits · pets up to 25 kg": "Cama, taças, brinquedo e biscoitos · animais até 25 kg", "Extra towels": "Toalhas extra", "For the pool and spa": "Para a piscina e o spa", "Offers & vouchers": "Ofertas e vales", "Waiting for you: 20% off, vouchers": "Waiting for you: 20% de desconto, vales", "Plan ahead for the Douro and enjoy 20% off your stay.": "Planeie com antecedência e desfrute de 20% de desconto na sua estadia.", "Waiting for you": "Waiting for you", "Special rates": "Tarifas especiais", "FREE": "FREE", "Pay at the hotel. Cancel or reschedule free of charge.": "Pague no hotel. Cancele ou reagende sem custos.", "SMART": "SMART", "10% off. Non-refundable. Paid in advance.": "10% de desconto. Não reembolsável. Pagamento antecipado.", "Give memories": "Ofereça memórias", "1 night € 300 · 2 nights € 500 or € 800 · value vouchers": "1 noite € 300 · 2 noites € 500 ou € 800 · vales de valor", "View": "Ver", "Pet-friendly": "Pet-friendly", "Pets up to 25 kg · kit in the room": "Animais até 25 kg · kit no quarto", "Save": "Guardar", "Vouchers work at any Octant hotel": "Os vales servem em qualquer hotel Octant", "Octant Évora": "Octant Évora", "Alentejo": "Alentejo", "Octant Praia Verde": "Octant Praia Verde", "Algarve": "Algarve", "Octant Furnas": "Octant Furnas", "Azores": "Açores", "Octant Vila Monte": "Octant Vila Monte", "Octant Ponta Delgada": "Octant Ponta Delgada", "Reservation OD-70215": "Reserva OD-70215", "Panoramic Suite · Oct 16 – 19 · 2 adults": "Suite Panorâmica · 16 – 19 out · 2 adultos", "Room charges": "Despesas do quarto", "Bookings": "Reservas", "Digital room key": "Chave digital do quarto", "Active": "Ativa", "Check-in / check-out": "Check-in / check-out", "3 PM / 12 PM": "15:00 / 12:00", "Breakfast included": "Pequeno-almoço incluído", "Restaurant or suite": "No restaurante ou na suite", "Activity reminders": "Lembretes de atividades", "Express check-out": "Check-out expresso", "Set up": "Ativar", "Prefer to talk?": "Prefere falar?", "Reception · +351 255 690 160": "Receção · +351 255 690 160", "Just booked": "Acabou de reservar", "Digital key sent to your phone": "Chave digital enviada para o seu telemóvel", "We will send you the current programme": "Enviaremos o programa atual", "Voucher options opened": "Opções de vale abertas", "Pet-friendly details saved": "Detalhes pet-friendly guardados", "Express check-out set up": "Check-out expresso ativado"};
+function tr(s){if(LANG!=="pt")return s;var k=s.trim();if(!k)return s;if(Object.prototype.hasOwnProperty.call(DICT,k))return s.replace(k,DICT[k]);if(k.indexOf("Request sent: ")===0)return s.replace(k,"Pedido enviado: "+tr(k.slice(14)));return s}
+function tt(s){return tr(String(s))}
+function to24(s){return s.replace(/(\d{1,2}):(\d{2}) ?(AM|PM)/g,function(m,h,mm,ap){return ((+h%12)+(ap==="PM"?12:0))+":"+mm})}
+function ft(s){return LANG==="pt"?to24(s):s}
+function nstr(n){return LANG==="pt"?String(n).replace(".",","):String(n)}
+var L=function(en,pt){return LANG==="pt"?pt:en};
+var TEXT_ROOTS=".screen,.rail,.topbar,.stage-hint";
+function applyEl(root){
+ if(root.nodeType===3){if(root.__en===undefined)root.__en=root.nodeValue;var v=LANG==="pt"?tr(root.__en):root.__en;if(root.nodeValue!==v)root.nodeValue=v;return}
+ if(root.nodeType!==1||/SCRIPT|STYLE/.test(root.tagName))return;
+ var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),n,list=[];while(n=w.nextNode())list.push(n);list.forEach(function(t){applyEl(t)});
+ var els=root.querySelectorAll?[].slice.call(root.querySelectorAll("[placeholder],[aria-label],[title]")):[];if(root.hasAttribute&&(root.hasAttribute("placeholder")||root.hasAttribute("aria-label")||root.hasAttribute("title")))els.push(root);
+ els.forEach(function(e){["placeholder","aria-label","title"].forEach(function(a){var v=e.getAttribute(a);if(v===null)return;var k="en"+a.replace("-","");if(e.dataset[k]===undefined)e.dataset[k]=v;var nv=LANG==="pt"?tr(e.dataset[k]):e.dataset[k];if(nv!==v)e.setAttribute(a,nv)})})}
+function applyAll(){document.querySelectorAll(TEXT_ROOTS).forEach(applyEl)}
+var mo=new MutationObserver(function(muts){muts.forEach(function(m){[].forEach.call(m.addedNodes,function(n){applyEl(n)})})});
+function flush(){mo.takeRecords().forEach(function(m){[].forEach.call(m.addedNodes,function(n){applyEl(n)})})}
+function esc(s){return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function svg(i,w){return '<svg width="'+(w||18)+'" height="'+(w||18)+'"><use href="#i-'+i+'"/></svg>'}
+
+var ORDER=["welcome","home","experiences","dining","spa","slots","checkout","confirmed","pass","chat","services","offers","stay"];
+var NOTES={
+welcome:{group:"Arrival",title:"Welcome",lede:"The first ten seconds, in Octant Douro's own voice and logo.",list:["The tagline is the hotel's own: 'Time for what you never want to forget'.","Real facts up front: kilometre 41 of the Douro, RAIVA in the 2026 MICHELIN Guide, indoor pool and gym open 24 h."],why:"A guest app is part of the brand. It should feel as calm and considered as the hotel."},
+home:{group:"Arrival",title:"Today",lede:"One calm screen for arrival day.",list:["Digital key and room details first.","Live facts guests ask about: pool and gym hours, tomorrow's sunset cruise.","Today's plan mixes confirmed bookings with a suggestion."],why:"Guests who know what is on today use more of the hotel, and call reception less."},
+experiences:{group:"Discover",title:"Experiences",lede:"The real programme, with real prices and rules, bookable in the app.",list:["Astronomy night, private river cruise on Octant I, Be my Guest dinner, canyoning, Casa de Algar tasting and the Douro through the ages.","Each experience carries its own rules: group-size pricing, notice periods, weather policy, minimum ages.","Today most of this runs through reception and email."],why:"These are high-value experiences. Booking them in the app, with the rules visible, lifts take-up and removes back-and-forth."},
+dining:{group:"Discover",title:"Dining",lede:"À TERRA, RAIVA, the pool terrace and the private dinner.",list:["RAIVA's Michelin mention and Chef Dárcio Henriques's story give the restaurant its place.","Reserve a table in two taps, or book the 8-moment Be my Guest dinner with wine pairings."],why:"Dining reservations by phone or desk are easy to lose. In the app they are instant and visible to the kitchen."},
+spa:{group:"Discover",title:"Spa & wellness",lede:"VOYA rituals, 24-hour pool and the visiting practitioners programme.",list:["Spa bookings are by email today. Here they take a few taps.","Facilities, hours and the children's pool rule are one tap away."],why:"Spa slots are perishable inventory. Easy booking fills quiet hours."},
+slots:{group:"Book without calling",title:"Pick a time",lede:"Fully working: day, time, guests and options, with the experience's own rules.",list:["Astronomy uses the real group-size pricing: one adult € 450, two € 275 each, down to € 180 each from five.","The boat has fixed prices by duration and only opens from the 48-hour notice date.","Casa de Algar only opens Thursday to Saturday, the sunset cruise only on its listed dates."],why:"The rules that today live in the fine print become the app's logic, so guests cannot book something that is not possible."},
+checkout:{group:"Book without calling",title:"Checkout",lede:"Charge to the room or pay by wallet.",list:["Room charge by default.","The boat shows its 20% deposit rule."],why:"Frictionless payment turns browsing into booking."},
+confirmed:{group:"Book without calling",title:"Confirmed",lede:"The confirmation, built from the booking just made.",list:["Reservation number, time, party size and meeting point.","One-tap reminder."],why:"Fewer no-shows on limited-capacity experiences."},
+pass:{group:"Book without calling",title:"Reservation pass",lede:"A QR code for the host or skipper to scan.",list:["No paper vouchers."],why:"A clean record of who is on each experience."},
+chat:{group:"During your stay",title:"Personal assistant",lede:"The suite's personal assistant, in the guest's pocket. Try 'check-out time' or 'pets'.",list:["Octant already promises a personal assistant with a direct contact number. The app makes it one tap.","Answers use the hotel's real policies: check-in, pets up to 25 kg, kids' pool hours, weather rule for stargazing."],why:"Reception handles fewer repeat questions, and every request is recorded."},
+services:{group:"During your stay",title:"Room & services",lede:"Everything promised in the suite, one tap away.",list:["Pillow menu, yoga mat, wine fridge, late check-out, pet kit and more as simple requests.","Staff see the request instantly."],why:"Small services shape how a stay feels, and they are easy to miss when you have to ask."},
+offers:{group:"During your stay",title:"Offers",lede:"The hotel's real offers, including vouchers valid across Octant.",list:["Waiting for you: 20% off when you plan ahead. Flexible and Smart rates.","Vouchers can be used at any Octant hotel, which is where a guest app scales."],why:"A guest who sees the next stay during this one books it before leaving."},
+stay:{group:"During your stay",title:"My stay",lede:"Reservation, charges and contacts.",list:["Room charges update as bookings are charged to the room.","Check-in and check-out times, breakfast, express check-out."],why:"Fewer calls to reception and a smoother check-out."}
+};
+var TABS=[
+{id:"home",label:"Today",icon:"i-home",match:["home"]},
+{id:"experiences",label:"Discover",icon:"i-compass",match:["experiences","dining","spa","slots","checkout","confirmed","pass"]},
+{id:"chat",label:"Assistant",icon:"i-chat",match:["chat"]},
+{id:"services",label:"Services",icon:"i-star",match:["services","offers"]},
+{id:"stay",label:"My stay",icon:"i-user",match:["stay"]}];
+document.querySelectorAll("[data-tabbar]").forEach(function(bar){
+bar.innerHTML=TABS.map(function(t){return '<button class="tab" data-go="'+t.id+'" data-tab="'+t.id+'"><svg><use href="#'+t.icon+'"/></svg>'+t.label+'</button>';}).join("")});
+
+var HOTEL={name:"Octant Douro",room:"Panoramic Suite",dates:"Oct 16 – 19",guests:"2 adults",phone:"+351 255 690 160",email:"reservations-douro@octanthotels.com",address:"Rua Quinta das Fontaínhas, 672, Raiva, Castelo de Paiva"};
+var DAYS=[["Fri","Oct",16],["Sat","Oct",17],["Sun","Oct",18],["Mon","Oct",19]];
+var ACTS={
+table:{name:"Restaurant table",defHour:"8:30 PM",short:"table",price:0,unit:"guest",durs:[90],mult:{90:1},cap:8,hours:["12:30 PM","1:30 PM","7:30 PM","8:30 PM","9:30 PM"],vars:[["À TERRA",0],["RAIVA · tasting menu",0],["Pool terrace · Ofyr grill",0]],addons:[["Window table request",0],["Celebration dessert",12]],cls:"t-terra",maxQty:8,note:"No payment now. RAIVA is featured in the 2026 MICHELIN Guide."},
+spa:{name:"Spa ritual",defHour:"5:00 PM",short:"spa ritual",price:95,unit:"guest",durs:[50,80],mult:{50:1,80:1.5},cap:4,hours:["10:00 AM","12:00 PM","3:00 PM","5:00 PM"],vars:[["VOYA organic facial",0],["Personalised massage",15],["Couples treatment",25]],addons:[["Sleep ritual add-on",25]],cls:"t-spa",maxQty:2,note:"Prices are illustrative. Today spa bookings are made by email."},
+astro:{name:"Astronomical observation",short:"stargazing",price:0,unit:"adult",qty:"Adults",tiers:{1:450,2:275,3:225,4:190,5:180},durs:[90],mult:{90:1},cap:15,hours:["10:00 PM"],vars:null,addons:[],cls:"t-star",maxQty:15,note:"Guided by two astronomers with two telescopes, about 90 minutes. Teenagers 14–18: € 80. Children under 14: free. Weather decision by 12:00; free cancellation up to 24 h before."},
+guest:{name:"Be my Guest · private dinner",defHour:"7:30 PM",short:"private dinner",price:220,unit:"guest",qty:"Guests",minQty:2,maxQty:4,durs:[150],mult:{150:1},cap:2,hours:["7:30 PM","8:00 PM"],vars:[["No wine pairing",0],["Non-alcoholic pairing",75],["Sommelier pairing",110],["Douro pairing",158]],addons:[],cls:"t-raiva",note:"Eight moments by Chef Dárcio Henriques, for 2 to 4 guests, about 2 h 30."},
+boat:{name:"Octant I · private river cruise",defHour:"2:30 PM",short:"river cruise",fixed:{60:350,120:550,180:750,240:950},unit:"booking",qty:"Passengers",durs:[60,120,180,240],mult:{60:1,120:1,180:1,240:1},cap:2,days:[2,3],hours:["10:00 AM","2:30 PM","5:00 PM"],vars:null,addons:[["On-board service (72 h notice)",0]],deposit:.2,cls:"t-river",maxQty:12,note:"The boat takes 12 guests plus 2 skippers. Book at least 48 h ahead (72 h with on-board service). 20% deposit to confirm."},
+sunset:{name:"The ultimate sunset",short:"sunset cruise",price:90,unit:"guest",days:[1],durs:[60],mult:{60:1},cap:12,hours:["6:30 PM"],vars:null,addons:[],cls:"t-sunset",maxQty:8,note:"Shared Barco Rabelo for one hour at sunset, one drink included. Children 0–3 free, 3–6 half price. Meeting point: Fluvina."},
+algar:{name:"Casa de Algar · visit & tasting",defHour:"3:00 PM",short:"wine tasting",price:45,unit:"guest",minQty:2,maxQty:12,days:[0,1],durs:[90],mult:{90:1},cap:8,hours:["11:00 AM","3:00 PM"],vars:null,addons:[["Garden picnic (from € 35)",35],["Transfer on request",0]],cls:"t-wine",note:"A Vinho Verde estate: three wines and regional tapas. Thursday to Saturday. Transfer not included."},
+ages:{name:"Douro through the ages",defHour:"5:00 PM",short:"tasting journey",price:45,unit:"guest",minQty:2,maxQty:18,durs:[45],mult:{45:1},cap:10,hours:["5:00 PM","6:30 PM"],vars:[["Shared",0],["Exclusive (€ 60 per person)",15]],addons:[],cls:"t-wine",note:"Youth, maturity and old age: white Verde wine, aged red, port, with olive oil, ham and cheese."},
+canyon:{name:"Canyoning · Ardena River",short:"canyoning",price:214,unit:"guest",minQty:2,maxQty:6,days:[1,2],durs:[240],mult:{240:1},cap:6,hours:["9:30 AM","2:00 PM"],vars:null,addons:[["Lunch on request",0]],cls:"t-canyon",note:"€ 428 for 2 people. Minimum age 12. Guide, equipment, insurance, photos and transfer included."}
+};
+var B={act:"table",day:0,hour:"7:30 PM",guests:2,dur:90,vari:0,addons:{},pay:"room",paid:false};
+var extra=[],charged=0;
+function money(n){return n===0?tt("No charge"):"€ "+nstr(n%1?n.toFixed(2):n)}
+function qtyStr(a,n){return n+" "+(LANG==="pt"?(a.qty==="Adults"?(n===1?"adulto":"adultos"):a.qty==="Passengers"?(n===1?"passageiro":"passageiros"):(n===1?"pessoa":"pessoas")):(a.qty==="Adults"?(n===1?"adult":"adults"):a.qty==="Passengers"?(n===1?"passenger":"passengers"):(n===1?"guest":"guests")))}
+function dayLabelFor(i){var d=DAYS[i];return LANG==="pt"?({Mon:"seg",Tue:"ter",Wed:"qua",Thu:"qui",Fri:"sex",Sat:"sáb",Sun:"dom"})[d[0]]+" "+d[2]+" out":d[0]+", "+d[1]+" "+d[2]}
+function dayLabel(){return dayLabelFor(B.day)}
+function spots(a,day,h){var s=0,k=a+day+h;for(var i=0;i<k.length;i++)s=(s*31+k.charCodeAt(i))>>>0;var c=ACTS[a].cap;var taken=s%(c+2);return Math.max(1,c-Math.min(taken,c-1))}
+function perPerson(a){if(a.tiers)return a.tiers[Math.min(B.guests,5)];var vadj=a.vars?a.vars[B.vari][1]:0;return a.price+vadj}
+function baseTotal(){var a=ACTS[B.act];if(a.fixed)return a.fixed[B.dur];if(a.tiers)return perPerson(a)*B.guests;return perPerson(a)*a.mult[B.dur]*B.guests}
+function total(){var a=ACTS[B.act],ex=0;Object.keys(B.addons).forEach(function(i){if(B.addons[i])ex+=a.addons[i][1]*B.guests});return Math.round((baseTotal()+ex)*100)/100}
+function setAct(k,v){var a=ACTS[k];B.act=k;B.dur=a.durs[0];B.vari=v||0;B.addons={};B.hour=a.defHour||a.hours[Math.min(1,a.hours.length-1)];B.day=a.days?a.days[0]:0;B.guests=a.minQty||2;if(B.guests>(a.maxQty||8))B.guests=a.maxQty}
+function pill(t,c){return '<span class="pill'+(c?" "+c:"")+'">'+t+'</span>'}
+function rowH(cls,title,meta,pl,attr){return '<button class="row" '+attr+'><span class="thumb '+cls+'" style="width:70px;height:62px"></span><span class="row-body"><span class="t">'+title+'</span><span class="a-meta">'+meta+'</span><span>'+pl+'</span></span><svg width="16" height="16" style="color:var(--app-muted)"><use href="#i-right"/></svg></button>'}
+function heroH(cls,title,sub,label,h){return '<div class="thumb '+cls+'" style="width:100%;height:'+(h||124)+'px;display:block"><span style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:14px;text-align:left;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.42))">'+(label?'<span class="a-label" style="color:rgba(255,255,255,.88)">'+label+'</span>':'')+'<span style="font-family:var(--display);font-size:27px;font-weight:500;letter-spacing:-.01em;line-height:1.05">'+title+'</span><span style="font-size:12px;color:rgba(255,255,255,.92);margin-top:2px">'+sub+'</span></span></div>'}
+
+function renderHome(){var h='';
+h+='<div class="card hero-pine" style="padding:15px;border:0;margin:0 20px;flex:none"><svg class="deco" viewBox="0 0 380 120" preserveAspectRatio="none" aria-hidden="true"><g fill="none" stroke="#C3CFB7" stroke-width="1" opacity=".35"><path d="M-10 96c70-46 120 16 190-22s120 10 210-30"/><path d="M-10 114c70-46 120 16 190-22s120 10 210-30"/></g></svg>'+
+'<div style="position:relative"><span class="a-label" style="color:rgba(255,255,255,.65)">Your stay</span><div style="font-family:var(--display);font-size:27px;font-weight:500;letter-spacing:-.01em;margin-top:3px;line-height:1.1">Octant Douro</div><div style="font-size:12px;color:rgba(255,255,255,.78);margin-top:3px">Panoramic Suite · Raiva, Castelo de Paiva</div><div style="font-size:12px;color:rgba(255,255,255,.78)">Oct 16 – 19 · 2 adults</div>'+
+'<div style="display:flex;gap:8px;margin-top:13px"><button class="btn amber sm" style="flex:1" data-toast="Digital key sent to your phone">Unlock door</button><button class="btn sm" style="flex:1;background:rgba(255,255,255,.16)" data-go="stay">Stay details</button></div></div></div>';
+h+='<div class="card" style="padding:12px 14px;margin:0 20px;flex:none"><div style="display:grid;grid-template-columns:repeat(3,1fr);text-align:center;gap:6px">'+[["24 h","Indoor pool"],["24 h","Gym"],["€ 90","Sunset cruise · Sat"]].map(function(c){return '<div><b style="display:block;font-family:var(--display);font-size:22px;font-weight:500;color:var(--app-ink)">'+c[0]+'</b><span class="a-label">'+c[1]+'</span></div>'}).join("")+'</div></div>';
+h+='<div style="margin:0 20px;flex:none"><div class="sec-head" style="margin:0 0 11px"><h3 class="a-h3">Your plan today</h3><button class="link" data-go="stay">Stay details</button></div><div class="timeline">'+
+'<div class="tl now"><span class="t">3:00 PM</span><div class="a-h3">Check-in · suite ready, digital key active</div><span class="a-meta">Panoramic Suite · breakfast included</span></div>'+
+'<div class="tl"><span class="t">7:30 PM</span><div class="a-h3">Dinner at À TERRA</div><span class="a-meta">Table for 2 · Confirmed</span></div>'+
+'<div class="tl sug"><span class="t">Suggested</span><div class="a-h3">Tomorrow at sunset: the Douro from the river</div><button class="pill sand" data-book="sunset" style="margin-top:4px">Reserve · € 90 per person</button></div></div></div>';
+h+='<div style="margin:0 20px;flex:none"><div class="sec-head" style="margin:0 0 11px"><h3 class="a-h3">Quick actions</h3></div><div class="qgrid">'+
+'<button class="qa" data-go="experiences"><i>'+svg("compass")+'</i>Experiences</button><button class="qa" data-go="dining"><i>'+svg("fork")+'</i>Dining</button><button class="qa" data-go="spa"><i>'+svg("drop")+'</i>Spa &amp; wellness</button><button class="qa" data-go="chat"><i>'+svg("chat")+'</i>Your assistant</button></div></div>';
+$("#home-body").innerHTML=h}
+
+function renderExperiences(){var h=heroH("t-river","Experiences","Luxury is discovering something new","Weekly programme");
+h+='<div class="stack rowlist" style="gap:9px">'+
+rowH("t-sunset","The ultimate sunset","Shared Barco Rabelo · 1 hour · Sat 17",pill("€ 90 per person","clay"),'data-book="sunset"')+
+rowH("t-river","Octant I · private river cruise","Up to 12 guests · from 1 hour",pill("From € 350 per booking"),'data-book="boat"')+
+rowH("t-star","Astronomical observation","With two astronomers · 22:00 – 23:30",pill("From € 180 per person"),'data-book="astro"')+
+rowH("t-raiva","Be my Guest","Private 8-moment dinner by the chef",pill("€ 220 per person"),'data-book="guest"')+
+rowH("t-wine","Casa de Algar","Vinho Verde estate visit and tasting · Thu–Sat",pill("€ 45 per person"),'data-book="algar"')+
+rowH("t-wine","Douro through the ages","45 min tasting journey from youth to old age",pill("From € 45 per person"),'data-book="ages"')+
+rowH("t-canyon","Canyoning","Ardena River · 4 h · from age 12",pill("From € 428 for 2"),'data-book="canyon"')+'</div>';
+h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Don\'t miss</span><div class="list-item">'+svg("check")+'Paiva Walkways</div><div class="list-item">'+svg("check")+'Picnic on Ilha dos Amores</div><div class="list-item">'+svg("check")+'Kayaking or paddle boarding on the river</div><div class="list-item">'+svg("check")+'Serra da Boneca Swing</div><button class="list-item" data-go="chat">'+svg("chat")+'Ask your assistant about this week<span class="v">›</span></button></div>';
+$("#experiences-body").innerHTML=h}
+
+function renderDining(){var h=heroH("t-terra","À TERRA & RAIVA","Two restaurants on the river","MICHELIN Guide 2026");
+h+='<div class="stack rowlist" style="gap:9px">'+
+rowH("t-terra","À TERRA","Wood-fired, shared dishes · lunch, dinner and kids",pill("Table","sand"),'data-res="0"')+
+rowH("t-raiva","RAIVA","Chef Dárcio Henriques · tasting menu",pill("MICHELIN Guide 2026","clay"),'data-res="1"')+
+rowH("t-pool","Pool terrace","Ofyr grill by the pool · panoramic views",pill("Table","sand"),'data-res="2"')+
+rowH("t-wine","Be my Guest","Private dinner · 8 moments · 2 to 4 guests",pill("€ 220 per person"),'data-book="guest"')+'</div>';
+h+='<div class="quote">At À TERRA the kitchen begins with what surrounds it: the garden, the river and the local producers.<span class="who">Octant Douro</span></div>';
+$("#dining-body").innerHTML=h}
+
+function renderSpa(){var h=heroH("t-spa","VOYA rituals","Organic seaweed skincare from Ireland","Spa");
+h+='<p style="font-size:13.5px;line-height:1.55;color:var(--app-ink-2)">Organic facials, personalised massages, sleep rituals, body wraps and bathing experiences, in five treatment rooms.</p><button class="btn amber" data-book="spa">Book a ritual</button>';
+h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Spa facilities</span><div class="hrow"><b>Heated indoor pool</b><span class="h">Open 24 h</span></div><div class="hrow"><b>Sensation shower</b><span class="h">Open 24 h</span></div><div class="hrow"><b>Gym</b><span class="h">Open 24 h</span></div><div class="hrow"><b>Sauna &amp; Turkish bath</b><span class="h">River views</span></div><div class="hrow"><b>Children up to 12, indoor pool</b><span class="h">9:00 AM – 4:00 PM</span></div></div>';
+h+='<div class="card" style="display:flex;gap:12px;align-items:center;background:var(--app-sand);border-color:transparent"><div style="flex:1"><span class="a-label">Visiting Practitioner Programme</span><div class="a-h3" style="margin-top:2px">Guest specialists, through the year</div></div><button class="btn amber sm" style="width:auto" data-toast="We will send you the current programme">Ask</button></div>';
+$("#spa-body").innerHTML=h}
+
+function renderSlots(){var a=ACTS[B.act];$("#slots-title").textContent="Book "+a.short;
+var h='<div class="week" style="width:100%">'+DAYS.map(function(d,i){var off=a.days&&a.days.indexOf(i)<0;return '<button class="day" data-bk-day="'+i+'" aria-pressed="'+(i===B.day)+'" '+(off?'disabled style="opacity:.35"':'')+'>'+d[0]+'<b>'+d[2]+'</b></button>'}).join("")+'</div>';
+if(a.note)h+='<div class="quote">'+a.note+'<span class="who">Octant Douro</span></div>';
+if(a.vars)h+='<div><span class="a-label">Option</span><div class="chips" style="padding:9px 0 0;flex-wrap:wrap">'+a.vars.map(function(v,i){return '<button class="chip" data-bk-var="'+i+'" aria-pressed="'+(i===B.vari)+'">'+v[0]+'</button>'}).join("")+'</div></div>';
+if(a.durs.length>1)h+='<div><span class="a-label">Duration</span><div class="seg" style="margin-top:9px">'+a.durs.map(function(d){return '<button data-bk-dur="'+d+'" aria-pressed="'+(d===B.dur)+'">'+(a.fixed?(d/60)+" h":d+" min")+'</button>'}).join("")+'</div></div>';
+h+='<div><span class="a-label">Pick a time</span><div class="slotgrid" style="margin-top:9px">'+a.hours.map(function(t){var s=spots(B.act,B.day,t);return '<button class="slotbtn" data-bk-hour="'+t+'" aria-pressed="'+(t===B.hour)+'">'+ft(t)+'<small>'+s+" "+L(s===1?"spot":"spots",s===1?"lugar":"lugares")+'</small></button>'}).join("")+'</div></div>';
+var min=a.minQty||1,priceLine=a.fixed?"€ "+a.fixed[B.dur]+" "+L("per booking","por reserva"):a.tiers?L("from € "+a.tiers[5]+" each","desde € "+a.tiers[5]+" cada"):(a.price?"€ "+a.price+" "+L("per guest","por pessoa"):"No charge");
+h+='<div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="a-h3">'+(a.qty||"Guests")+'</div><span class="a-meta">'+priceLine+(min>1?" · "+L("min. "+min,"mín. "+min):"")+'</span></div><div class="stepper"><button data-step="-1" aria-label="Fewer">−</button><b>'+B.guests+'</b><button data-step="1" aria-label="More">+</button></div></div>';
+if(a.addons.length)h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Add extras</span>'+a.addons.map(function(x,i){return '<div class="list-item"><span>'+x[0]+'<span class="a-meta" style="display:block">'+(x[1]?money(x[1])+" "+L("per guest","por pessoa"):"Included")+'</span></span><button class="switch" data-bk-addon="'+i+'" aria-pressed="'+(!!B.addons[i])+'" aria-label="'+x[0]+'"></button></div>'}).join("")+'</div>';
+var tot=total();
+h+='<div class="card stack" style="gap:8px"><div style="display:flex"><span class="a-meta">'+esc(tt(a.name))+(a.vars?" · "+tt(a.vars[B.vari][0]):"")+(a.fixed?"":" × "+B.guests)+'</span><b style="margin-left:auto;font-size:13.5px">'+money(baseTotal())+'</b></div>'+
+Object.keys(B.addons).filter(function(i){return B.addons[i]&&a.addons[i][1]}).map(function(i){return '<div style="display:flex"><span class="a-meta">'+tt(a.addons[i][0])+' × '+B.guests+'</span><b style="margin-left:auto;font-size:13.5px">'+money(a.addons[i][1]*B.guests)+'</b></div>'}).join("")+
+'<div style="display:flex;border-top:1px solid var(--app-line);padding-top:9px"><b>Total</b><b style="margin-left:auto;font-family:var(--display);font-size:23px;font-weight:500">'+money(tot)+'</b></div></div>';
+h+='<button class="btn amber" data-go="checkout">'+tt("Continue")+" · "+dayLabel()+", "+ft(B.hour)+'</button>';
+$("#slots-body").innerHTML=h}
+
+function renderCheckout(){var a=ACTS[B.act],tot=total();var due=a.deposit?Math.round(tot*a.deposit*100)/100:tot;
+var opts=[["room","Charge to Room","Settled at check-out","i-key"],["wallet","Apple Pay","Face ID","i-card"],["card","Visa •••• 4242","Saved card","i-card"]];
+$("#checkout-body").innerHTML='<div class="card" style="display:flex;gap:12px;align-items:center"><span class="thumb '+a.cls+'" style="width:54px;height:54px"></span><div><div class="a-h3">'+esc(tt(a.name))+(a.vars?" · "+tt(a.vars[B.vari][0]):"")+'</div><span class="a-meta">'+dayLabel()+' · '+ft(B.hour)+' · '+qtyStr(a,B.guests)+'</span></div></div>'+
+(tot>0?'<span class="a-label">Pay with</span><div class="stack" style="gap:9px">'+opts.map(function(o){return '<button class="payopt" data-pay="'+o[0]+'" aria-pressed="'+(B.pay===o[0])+'"><span class="radio">'+svg("check",12)+'</span>'+svg(o[3].slice(2),20)+'<span style="flex:1">'+o[1]+'<span class="a-meta" style="display:block;font-weight:500">'+o[2]+'</span></span></button>'}).join("")+'</div>':'<div class="card" style="background:var(--app-mint);border-color:transparent"><b>No charge</b><span class="a-meta" style="display:block">No payment needed.</span></div>')+
+(a.deposit?'<div class="quote">'+L("20% deposit due now: € "+nstr(due.toFixed(2))+". The balance is settled on board.","Sinal de 20% a pagar agora: € "+nstr(due.toFixed(2))+". O restante é pago a bordo.")+'<span class="who">Octant Douro</span></div>':'')+
+'<div class="card" style="display:flex"><b>Total</b><b style="margin-left:auto;font-family:var(--display);font-size:23px;font-weight:500">'+money(tot)+'</b></div>'+
+'<p class="a-meta" style="text-align:center">'+(B.act==="astro"?"Free cancellation up to 24 h before.":B.act==="boat"?"Free cancellation up to 48 h before.":"Free cancellation up to 24 h before.")+'</p><button class="btn amber" id="confirm-pay">'+(tot>0?(a.deposit?tt("Pay deposit")+" "+money(due):tt("Confirm & pay")+" "+money(tot)):tt("Confirm booking"))+'</button>'}
+
+function confirmBooking(){var a=ACTS[B.act],tot=total();var due=a.deposit?Math.round(tot*a.deposit*100)/100:tot;if(B.pay==="room")charged+=due;extra=[{d:B.day,h:B.hour,act:B.act,v:B.vari,g:B.guests}].concat(extra);B.paid=true;go("confirmed")}
+function renderConfirmed(){var a=ACTS[B.act];
+$("#confirmed-body").innerHTML='<div class="burst" style="margin-top:6px">'+svg("check",34)+'</div><div><h1 class="a-h1">You\'re booked.</h1><p class="a-meta" style="margin-top:5px">Reservation OD-70215 · also sent to your email</p></div>'+
+'<div class="card stack" style="gap:10px;text-align:left"><span class="a-label">'+esc(tt(a.name))+'</span><div style="display:flex;gap:12px;align-items:center"><span class="thumb '+a.cls+'" style="width:54px;height:54px"></span><div><div class="a-h3">'+dayLabel()+' · '+ft(B.hour)+'</div><span class="a-meta">'+qtyStr(a,B.guests)+(a.vars?" · "+tt(a.vars[B.vari][0]):"")+'</span></div></div>'+
+'<div class="list-item" style="padding:9px 0">'+svg("pin")+(B.act==="sunset"?"Meeting point: Fluvina":"Octant Douro")+'<span class="v">Directions</span></div><div class="list-item" style="padding:9px 0">'+svg("bell")+'Remind me 1 hour before<button class="switch" data-switch aria-pressed="true" aria-label="Reminder"></button></div></div>'+
+'<button class="btn" data-go="pass">'+svg("qr")+'Show reservation pass</button><button class="btn outline" data-go="stay">See my stay</button>'}
+function qr(){var n=25,s=7,cells="",seed=70215;function r(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff}
+function inF(x,y){return (x<8&&y<8)||(x>=n-8&&y<8)||(x<8&&y>=n-8)}
+function finder(ox,oy){var o="";for(var i=0;i<7;i++)for(var j=0;j<7;j++){var e=i===0||j===0||i===6||j===6,c=i>=2&&i<=4&&j>=2&&j<=4;if(e||c)o+='<rect x="'+((ox+i)*s)+'" y="'+((oy+j)*s)+'" width="'+s+'" height="'+s+'"/>'}return o}
+for(var x=0;x<n;x++)for(var y=0;y<n;y++){if(inF(x,y))continue;if(r()>.52)cells+='<rect x="'+(x*s)+'" y="'+(y*s)+'" width="'+s+'" height="'+s+'"/>'}
+return '<svg viewBox="0 0 '+(n*s)+' '+(n*s)+'" width="200" height="200" fill="#232828" shape-rendering="crispEdges" aria-label="Reservation pass QR code">'+cells+finder(0,0)+finder(n-7,0)+finder(0,n-7)+'</svg>'}
+function renderPass(){var a=ACTS[B.act];$("#pass-body").innerHTML='<div class="qrbox">'+qr()+'</div><div><div class="a-h2">'+esc(tt(a.name))+'</div><span class="a-meta">'+dayLabel()+' · '+ft(B.hour)+' · '+qtyStr(a,B.guests)+'</span></div><p class="a-meta">Show this to your host or skipper. They scan it, no paper vouchers.</p><button class="btn outline">'+svg("share",16)+'Send to a guest in my party</button>'}
+
+function renderServices(){var req=[["Pillow menu","Choose from the pillow menu"],["Yoga mat","Delivered to your suite"],["Wine fridge restock","Contents at an additional cost"],["Late check-out","Subject to availability"],["Pet kit","Bed, bowls, toy and biscuits · pets up to 25 kg"],["Extra towels","For the pool and spa"]];
+var h=heroH("t-hills","Your suite","Panoramic Suite · river and mountain views","Octant Douro");
+h+='<div class="card" style="display:flex;gap:12px;align-items:center"><span class="icon-btn" style="background:var(--app-mint)">'+svg("phone")+'</span><div style="flex:1"><div class="a-h3">Your personal assistant</div><span class="a-meta">Direct line · or message from the app</span></div><button class="btn sm amber" style="width:auto" data-go="chat">Chat</button></div>';
+h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Request</span>'+req.map(function(r){return '<button class="list-item" data-toast="Request sent: '+r[0]+'"><span style="flex:1">'+r[0]+'<span class="a-meta" style="display:block;font-weight:500">'+r[1]+'</span></span>'+pill("Request","sand")+'</button>'}).join("")+'</div>';
+h+='<div class="stack rowlist" style="gap:9px">'+rowH("t-gift","Offers & vouchers","Waiting for you: 20% off, vouchers",pill("Offers"),'data-go="offers"')+'</div>';
+$("#services-body").innerHTML=h}
+
+function renderOffers(){
+var h='<div class="quote">Plan ahead for the Douro and enjoy 20% off your stay.<span class="who">Waiting for you</span></div>';
+h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Special rates</span><div class="menu-item"><div><div class="a-h3">FREE</div><span class="a-meta">Pay at the hotel. Cancel or reschedule free of charge.</span></div></div><div class="menu-item"><div><div class="a-h3">SMART</div><span class="a-meta">10% off. Non-refundable. Paid in advance.</span></div></div></div>';
+h+='<div class="card" style="display:flex;gap:12px;align-items:center"><span class="thumb t-gift" style="width:58px;height:58px;display:grid;place-items:center;color:#fff">'+svg("gift",24)+'</span><div style="flex:1;min-width:0"><div class="a-h3">Give memories</div><span class="a-meta">1 night € 300 · 2 nights € 500 or € 800 · value vouchers</span></div><button class="pill sand" data-toast="Voucher options opened">View</button></div>';
+h+='<div class="card" style="display:flex;gap:12px;align-items:center"><span class="thumb t-hills" style="width:58px;height:58px;display:grid;place-items:center;color:#fff">'+svg("paw",24)+'</span><div style="flex:1;min-width:0"><div class="a-h3">Pet-friendly</div><span class="a-meta">Pets up to 25 kg · kit in the room</span></div><button class="pill sand" data-toast="Pet-friendly details saved">Save</button></div>';
+h+='<div class="card" style="padding:4px 14px"><span class="a-label" style="display:block;padding-top:10px">Vouchers work at any Octant hotel</span><div class="hrow"><b>Octant Évora</b><span class="h">Alentejo</span></div><div class="hrow"><b>Octant Praia Verde</b><span class="h">Algarve</span></div><div class="hrow"><b>Octant Furnas</b><span class="h">Azores</span></div><div class="hrow"><b>Octant Vila Monte</b><span class="h">Algarve</span></div><div class="hrow"><b>Octant Ponta Delgada</b><span class="h">Azores</span></div></div>';
+$("#offers-body").innerHTML=h}
+
+var msgs=[
+{r:"out",t:"What time is check-out on Monday?",i:"A que horas é o check-out na segunda-feira?",ts:"1:02 PM"},
+{r:"in",t:"Check-out is at 12:00. If you would like to stay longer, I can request a late check-out for you, subject to availability.",i:"O check-out é às 12:00. Se quiser ficar mais tempo, posso pedir um late check-out, sujeito a disponibilidade.",ts:"1:03 PM",who:1,a:[["Request late check-out","toast:Request sent: Late check-out"]]}];
+var KB=[
+[/check.?out|check.?in|late|early|saída|saida|hora/i,"Check-in is from 3:00 PM and check-out is at 12:00. I can request an early check-in or late check-out for you, subject to availability.","O check-in é a partir das 15:00 e o check-out às 12:00. Posso pedir um early check-in ou late check-out, sujeito a disponibilidade.",[["Request late check-out","toast:Request sent: Late check-out"]]],
+[/pet|dog|cat|cão|cao|gato|animal/i,"Pets up to 25 kg are welcome. There is a supplement per night, and the room has a kit with a bed, bowls, a toy and biscuits.","Aceitamos animais até 25 kg. Existe um suplemento por noite e o quarto tem um kit com cama, taças, brinquedo e biscoitos.",[["Request pet kit","toast:Request sent: Pet kit"]]],
+[/star|astro|telescop|estrela|astronom/i,"Astronomical observation runs 22:00–23:30 with two astronomers. If the weather is bad we decide by 12:00 and move it to the next day.","A observação astronómica decorre das 22:00 às 23:30 com dois astrónomos. Se o tempo estiver mau, decidimos até às 12:00 e passa para o dia seguinte.",[["Book stargazing","act:astro"]]],
+[/boat|cruise|sunset|river|barco|rabelo|pôr|por do sol/i,"The sunset cruise runs on a Barco Rabelo for one hour, with a drink on board. For a private cruise on Octant I, book at least 48 hours ahead.","O cruzeiro ao pôr do sol decorre num Barco Rabelo durante uma hora, com uma bebida a bordo. Para um cruzeiro privado no Octant I, reserve com pelo menos 48 horas de antecedência.",[["Book the sunset cruise","act:sunset"]]],
+[/spa|massage|voya|treatment|facial|massagem|tratamento/i,"The spa uses VOYA organic seaweed products, with five treatment rooms. The heated indoor pool, sensation shower and gym are open 24 hours.","O spa usa produtos orgânicos de algas VOYA, com cinco salas de tratamento. A piscina interior aquecida, o duche de sensações e o ginásio estão abertos 24 horas.",[["Book a ritual","act:spa"]]],
+[/kid|child|children|filho|crian/i,"Children up to 12 can use the indoor pool every day between 9:00 and 16:00. À TERRA also has a kids' programme, Exploradores.","As crianças até aos 12 anos podem usar a piscina interior todos os dias entre as 9:00 e as 16:00. O À TERRA tem também um programa infantil, Exploradores.",null],
+[/dinner|eat|food|restaurant|raiva|terra|jantar|comer|restaurante/i,"À TERRA serves lunch and dinner, with wood-fired shared dishes. RAIVA, by Chef Dárcio Henriques, is featured in the 2026 MICHELIN Guide.","O À TERRA serve almoço e jantar, com pratos de lume de lenha para partilhar. O RAIVA, do Chef Dárcio Henriques, consta do Guia MICHELIN 2026.",[["See dining","go:dining"]]],
+[/canyon|adventure|aventura|rio ardena/i,"Canyoning in the Ardena River takes about 4 hours, from age 12. It is € 428 for two people, including guide, equipment, insurance, photos and transfer.","O canyoning no Rio Ardena dura cerca de 4 horas, a partir dos 12 anos. Custa € 428 para duas pessoas, com guia, equipamento, seguro, fotografias e transporte.",[["Book canyoning","act:canyon"]]],
+[/wine|vinho|algar|tasting|prova/i,"Casa de Algar is a Vinho Verde estate. The visit includes three wines and regional tapas, Thursday to Saturday, € 45 per person.","A Casa de Algar é uma quinta de Vinho Verde. A visita inclui três vinhos e petiscos regionais, de quinta a sábado, € 45 por pessoa.",[["Book the tasting","act:algar"]]],
+[/voucher|gift|vale|oferta|presente/i,"Vouchers: 1 night € 300, 2 nights € 500 or € 800, or a value of your choice. They work at any Octant hotel.","Vales: 1 noite € 300, 2 noites € 500 ou € 800, ou um valor à sua escolha. Podem ser usados em qualquer hotel Octant.",[["See offers","go:offers"]]],
+[/human|person|reception|call|phone|pessoa|recep|ligar/i,"Of course. I've flagged this for reception and they will message you in a few minutes. You can also call +351 255 690 160.","Claro. Já avisei a receção e vão contactá-lo dentro de poucos minutos. Também pode ligar para +351 255 690 160.",null]];
+var SUG=["Check-out time","Pets","Tell me about the stars","Where can I eat tonight?","Talk to a person"];
+function paintMsgs(typing){var m=$("#msgs");
+m.innerHTML=msgs.map(function(x){var txt=(LANG==="pt"&&x.i)?x.i:x.t;return '<div class="bubble '+x.r+'">'+esc(txt)+(x.a?'<div class="acts">'+x.a.map(function(a){return '<button data-x="'+a[1]+'">'+a[0]+'</button>'}).join("")+'</div>':'')+'<small>'+(x.who?L("Assistant · ","Assistente · "):"")+ft(x.ts)+'</small></div>'}).join("")+(typing?'<div class="bubble in typing"><i></i><i></i><i></i></div>':'');
+m.scrollTop=m.scrollHeight;flush()}
+function ask(q){var ts=new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});msgs.push({r:"out",t:q,ts:ts});paintMsgs(true);
+var hit=null;for(var i=0;i<KB.length;i++){if(KB[i][0].test(q)){hit=KB[i];break}}
+setTimeout(function(){msgs.push({r:"in",t:hit?hit[1]:"Good question. I'll check with the team and reply here shortly. Meanwhile I can book experiences, the spa or a table, or connect you with reception.",i:hit?hit[2]:"Boa pergunta. Vou confirmar com a equipa e respondo aqui em breve. Entretanto, posso reservar experiências, o spa ou uma mesa, ou ligá-lo à receção.",ts:ts,who:1,a:hit?hit[3]:null});paintMsgs()},750)}
+function renderChat(){paintMsgs();$("#sugg").innerHTML=SUG.map(function(x){return '<button class="chip" data-sug>'+x+'</button>'}).join("")}
+
+function renderStay(){var h='<div class="card hero-pine" style="border:0"><span class="a-label" style="color:rgba(255,255,255,.65)">Reservation OD-70215</span><div style="font-family:var(--display);font-size:27px;font-weight:500;margin-top:3px;line-height:1.1">Octant Douro</div><div style="font-size:12px;color:rgba(255,255,255,.78)">Panoramic Suite · Oct 16 – 19 · 2 adults</div></div>';
+h+='<div class="stats"><div class="stat"><span class="a-label">Room charges</span><b>'+money(charged)+'</b></div><div class="stat"><span class="a-label">Bookings</span><b>'+(extra.length+1)+'</b></div></div>';
+if(extra.length)h+='<div class="card timeline" style="padding:14px 14px 0 34px">'+extra.map(function(x){var a=ACTS[x.act];return '<div class="tl now"><span class="t">'+dayLabelFor(x.d)+" · "+ft(x.h)+'</span><div class="a-h3">'+esc(tt(a.name))+(a.vars?" · "+tt(a.vars[x.v][0]):"")+'</div><span class="a-meta">'+qtyStr(a,x.g)+" · "+tt("Just booked")+'</span></div>'}).join("")+'</div>';
+h+='<div class="card" style="padding:4px 14px"><div class="list-item">'+svg("key")+'Digital room key<span class="v">Active</span></div><div class="list-item">'+svg("sun")+'Check-in / check-out<span class="v">3 PM / 12 PM</span></div><div class="list-item">'+svg("fork")+'Breakfast included<span class="v">Restaurant or suite</span></div><div class="list-item">'+svg("bell")+'Activity reminders<button class="switch" data-switch aria-pressed="true" aria-label="Reminders"></button></div><button class="list-item" data-toast="Express check-out set up">'+svg("pin")+'Express check-out<span class="v">Set up</span></button></div>';
+h+='<div class="card" style="display:flex;gap:12px;align-items:center"><span class="icon-btn" style="background:var(--app-mint)">'+svg("phone")+'</span><div style="flex:1"><div class="a-h3">Prefer to talk?</div><span class="a-meta">Reception · +351 255 690 160</span></div></div>';
+$("#stay-body").innerHTML=h}
+
+var views={},railItems={};
+document.querySelectorAll("[data-view]").forEach(function(v){views[v.dataset.view]=v});
+document.querySelectorAll(".rail-item").forEach(function(b){railItems[b.dataset.go]=b});
+var current=null;
+var R={home:renderHome,experiences:renderExperiences,dining:renderDining,spa:renderSpa,slots:renderSlots,checkout:renderCheckout,confirmed:renderConfirmed,pass:renderPass,chat:renderChat,services:renderServices,offers:renderOffers,stay:renderStay};
+function render(id){if(R[id])R[id]()}
+function go(id){
+if(!views[id])return;
+var changed=id!==current;current=id;render(id);
+if(!changed){flush();return}
+Object.keys(views).forEach(function(k){views[k].classList.toggle("active",k===id)});
+Object.keys(railItems).forEach(function(k){railItems[k].setAttribute("aria-current",k===id?"true":"false")});
+var sc=views[id].querySelector(".app-scroll");if(sc&&id!=="chat")sc.scrollTop=0;
+var tab=(TABS.filter(function(t){return t.match.indexOf(id)>-1})[0]||{}).id;
+document.querySelectorAll("[data-tab]").forEach(function(t){t.setAttribute("aria-current",t.dataset.tab===tab?"true":"false")});
+var n=NOTES[id];
+$("#n-group").textContent=n.group;$("#n-title").textContent=n.title;$("#n-lede").textContent=n.lede;
+$("#n-list").innerHTML=n.list.map(function(x){return "<li>"+x+"</li>"}).join("");$("#n-why").textContent=n.why;
+var i=ORDER.indexOf(id);$("#prev").disabled=(i<=0);$("#next").disabled=(i>=ORDER.length-1);
+if(history.replaceState)history.replaceState(null,"","#"+id);flush()}
+function step(d){var i=ORDER.indexOf(current)+d;if(i>=0&&i<ORDER.length)go(ORDER[i])}
+function toast(t){var e=$("#toast");if(!e){e=document.createElement("div");e.id="toast";e.style.cssText="position:absolute;left:50%;bottom:92px;transform:translateX(-50%);background:#2A302F;color:#fff;font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:99px;z-index:20;transition:opacity .2s;max-width:80%;text-align:center";document.querySelector(".screen").appendChild(e)}
+e.textContent=t;flush();e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(function(){e.style.opacity=0},2200)}
+function action(x){var p=x.split(":"),k=p[0],v=p.slice(1).join(":");if(k==="act"){setAct(v);go("slots")}else if(k==="go")go(v);else if(k==="toast")toast(v)}
+$("#prev").addEventListener("click",function(){step(-1)});$("#next").addEventListener("click",function(){step(1)});
+document.addEventListener("click",function(e){
+var t;
+if(t=e.target.closest("[data-x]")){action(t.dataset.x);return}
+if(t=e.target.closest("[data-res]")){setAct("table",+t.dataset.res);go("slots");return}
+if(t=e.target.closest("[data-book]")){setAct(t.dataset.book);go("slots");return}
+if(t=e.target.closest("[data-go]")){e.preventDefault();go(t.dataset.go);return}
+if(t=e.target.closest("[data-toast]")){toast(t.dataset.toast);return}
+if(t=e.target.closest("[data-bk-day]")){B.day=+t.dataset.bkDay;renderSlots();return}
+if(t=e.target.closest("[data-bk-hour]")){B.hour=t.dataset.bkHour;renderSlots();return}
+if(t=e.target.closest("[data-bk-var]")){B.vari=+t.dataset.bkVar;renderSlots();return}
+if(t=e.target.closest("[data-bk-dur]")){B.dur=+t.dataset.bkDur;renderSlots();return}
+if(t=e.target.closest("[data-bk-addon]")){var i=t.dataset.bkAddon;B.addons[i]=!B.addons[i];renderSlots();return}
+if(t=e.target.closest("[data-step]")){var a=ACTS[B.act];B.guests=Math.max(a.minQty||1,Math.min(a.maxQty||8,B.guests+(+t.dataset.step)));renderSlots();return}
+if(t=e.target.closest("[data-pay]")){B.pay=t.dataset.pay;renderCheckout();return}
+if(t=e.target.closest("#confirm-pay")){confirmBooking();return}
+if(t=e.target.closest("[data-sug]")){ask(t.textContent);return}
+var grp=e.target.closest("[data-chip],[data-seg],[data-day]");
+if(grp){var kind=grp.hasAttribute("data-chip")?"data-chip":grp.hasAttribute("data-seg")?"data-seg":"data-day";
+grp.parentElement.querySelectorAll("["+kind+"]").forEach(function(s){s.setAttribute("aria-pressed",s===grp?"true":"false")});return}
+var sw=e.target.closest("[data-switch]");if(sw)sw.setAttribute("aria-pressed",sw.getAttribute("aria-pressed")==="true"?"false":"true")});
+document.addEventListener("click",function(){flush()});
+$("#chat-form").addEventListener("submit",function(e){e.preventDefault();var v=$("#chat-inp").value.trim();if(v){$("#chat-inp").value="";ask(v)}});
+var nb=$("#notes-toggle");
+function setNotes(on){document.body.setAttribute("data-notes",on?"on":"off");nb.setAttribute("aria-pressed",on?"true":"false");try{localStorage.setItem("oct-notes",on?"on":"off")}catch(e){}}
+nb.addEventListener("click",function(){setNotes(document.body.getAttribute("data-notes")!=="on")});
+document.addEventListener("keydown",function(e){if(e.target.matches("input,textarea"))return;
+if(e.key==="ArrowRight")step(1);if(e.key==="ArrowLeft")step(-1);if(e.key==="n"||e.key==="N")nb.click()});
+var sn=null;try{sn=localStorage.getItem("oct-notes")}catch(e){}
+setNotes(sn==="on");
+var lb=$("#lang-toggle");
+function setLang(l){LANG=l;document.documentElement.lang=l;applyAll();render(current);lb.textContent=(l==="pt"?"EN":"PT");lb.title=(l==="pt"?"Switch to English":"Mudar para português");
+ try{var u=new URL(location.href);u.searchParams.set("lang",l);history.replaceState(null,"",u.pathname+u.search+location.hash)}catch(e){}}
+lb.addEventListener("click",function(){setLang(LANG==="pt"?"en":"pt")});
+var start=(location.hash||"").replace("#","");
+go(views[start]?start:"welcome");
+document.documentElement.lang=LANG;applyAll();lb.textContent=(LANG==="pt"?"EN":"PT");lb.title=(LANG==="pt"?"Switch to English":"Mudar para português");
+document.querySelectorAll(TEXT_ROOTS).forEach(function(r){mo.observe(r,{childList:true,subtree:true})});
+})();
+</script></body></html>
